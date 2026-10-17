@@ -1,0 +1,11 @@
+{
+  "name": "talksy",
+  "description": "Modern, secure WhatsApp-style messaging app with private chats, voice notes, media attachments, and admin controls.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

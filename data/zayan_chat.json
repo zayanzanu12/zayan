@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "id": "zayan",
+      "displayName": "Zayan (Admin)",
+      "role": "admin",
+      "passwordHash": "41c42cdd3c034b1afd575db31ad69c4d342f27aea327eb0935033c017cef76ad70bcd586d1b7dce3b6992bea05d1297937703091714f9e719b54e3a7ba37697d",
+      "salt": "ac91ff8727affdb9e84402c96d2a5268",
+      "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "bio": "Creator & Administrator of Talksy ⚡",
+      "status": "Online & Building",
+      "disabled": false,
+      "online": true,
+      "lastSeen": "2026-10-14T12:20:00.000Z",
+      "createdAt": "2026-10-14T12:03:29.877Z"
+    }
+  ],
+  "messages": [],
+  "sessions": [
+    {
+      "token": "fa9f5ad31236b6827357854b0c04aa449c15583a67da67575486706e3a816af0",
+      "userId": "zayan",
+      "expiresAt": 1794571409933
+    }
+  ],
+  "reports": []
+}

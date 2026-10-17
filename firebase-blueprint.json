@@ -1,0 +1,295 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Talksy user profile storing presence, status, and account metadata",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique username / user ID",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "User role: admin or friend",
+          "enum": ["admin", "friend"]
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to user's avatar image",
+          "maxLength": 500
+        },
+        "bio": {
+          "type": "string",
+          "description": "Short user bio",
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "description": "Status text such as Available, Busy, etc.",
+          "maxLength": 100
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Whether the user account is disabled"
+        },
+        "online": {
+          "type": "boolean",
+          "description": "Whether the user is currently online"
+        },
+        "lastSeen": {
+          "type": "string",
+          "description": "ISO timestamp of when the user was last active"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation"
+        }
+      },
+      "required": ["id", "displayName", "role", "disabled"]
+    },
+    "Device": {
+      "title": "Device",
+      "description": "Linked device session connected to a user's account",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique device / session identifier",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User ID owning this session",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "deviceName": {
+          "type": "string",
+          "description": "Human-readable device name",
+          "maxLength": 100
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "Category of device",
+          "enum": ["desktop", "mobile", "tablet", "browser"]
+        },
+        "browser": {
+          "type": "string",
+          "description": "Browser name",
+          "maxLength": 50
+        },
+        "os": {
+          "type": "string",
+          "description": "Operating system name",
+          "maxLength": 50
+        },
+        "ip": {
+          "type": "string",
+          "description": "Client IP address",
+          "maxLength": 50
+        },
+        "location": {
+          "type": "string",
+          "description": "Approximate location / network region",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when device was linked"
+        },
+        "lastActive": {
+          "type": "string",
+          "description": "ISO timestamp when device was last seen"
+        }
+      },
+      "required": ["id", "userId", "deviceName", "deviceType", "createdAt", "lastActive"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direct chat message exchanged between users",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique message ID",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "ID of the sending user",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "receiverId": {
+          "type": "string",
+          "description": "ID of the recipient user",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "text": {
+          "type": "string",
+          "description": "Message text content",
+          "maxLength": 5000
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL of attachment media if present",
+          "maxLength": 1000
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Type of media attachment",
+          "enum": ["image", "video", "audio", "voice", "file", "gif"]
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original filename if attachment",
+          "maxLength": 255
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "File size in bytes"
+        },
+        "voiceDuration": {
+          "type": "number",
+          "description": "Voice message duration in seconds"
+        },
+        "replyToId": {
+          "type": "string",
+          "description": "ID of message being replied to",
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "description": "Message delivery status",
+          "enum": ["sent", "delivered", "read"]
+        },
+        "isEdited": {
+          "type": "boolean",
+          "description": "Whether message was edited"
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Whether message was soft-deleted"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "editedAt": {
+          "type": "string",
+          "description": "ISO timestamp of edit"
+        }
+      },
+      "required": ["id", "senderId", "receiverId", "text", "status", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Flagged message report sent to administrators",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique report ID",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "messageId": {
+          "type": "string",
+          "description": "ID of the flagged message",
+          "maxLength": 128
+        },
+        "reportedBy": {
+          "type": "string",
+          "description": "User ID of reporting user",
+          "maxLength": 64
+        },
+        "reportedUserId": {
+          "type": "string",
+          "description": "User ID of accused user",
+          "maxLength": 64
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for report",
+          "maxLength": 500
+        },
+        "messageSnippet": {
+          "type": "string",
+          "description": "Snippet of message content",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "description": "Report status",
+          "enum": ["pending", "resolved"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of report"
+        }
+      },
+      "required": ["id", "messageId", "reportedBy", "reportedUserId", "reason", "status", "createdAt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Trusted admin role lookup document",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Admin UID",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrator role marker",
+          "enum": ["admin"]
+        }
+      },
+      "required": ["id", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Collection of Talksy user profiles"
+    },
+    "/users/{userId}/devices/{deviceId}": {
+      "schema": {
+        "$ref": "#/entities/Device"
+      },
+      "description": "Subcollection of linked device sessions for a user"
+    },
+    "/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/Message"
+      },
+      "description": "Collection of direct chat messages"
+    },
+    "/reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/Report"
+      },
+      "description": "Collection of flagged message reports"
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/Admin"
+      },
+      "description": "Collection of admin role records"
+    }
+  }
+}
