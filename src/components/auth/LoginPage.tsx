@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Shield,
   Sparkles,
-  UserCheck,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { User as UserType } from '../../types/chat';
@@ -18,18 +17,15 @@ import { Logo } from '../common/Logo';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserType) => void;
+  onOpenAdminLogin?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onOpenAdminLogin }) => {
   // Cinematic Animation Stage: 'orb' -> 'logo' -> 'glass' -> 'exiting'
   const [animStage, setAnimStage] = useState<'orb' | 'logo' | 'glass' | 'exiting'>('orb');
 
-  // Mode: 'login' | 'signup'
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-
   // Form Fields
   const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -46,7 +42,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   useEffect(() => {
     // Step 1: Glowing emerald orb emerges
     const timer1 = setTimeout(() => {
-      // Step 2: Talksy logo fades in with scale and soft aura
+      // Step 2: ZappChat logo fades in with scale and soft aura
       setAnimStage('logo');
     }, 700);
 
@@ -64,7 +60,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError('Please provide all required fields');
+      setError('Please enter your user ID and password');
       return;
     }
 
@@ -72,24 +68,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      if (mode === 'login') {
-        const data = await api.login(username.trim(), password);
-        setSuccessMsg(`Welcome back, ${data.user.displayName}!`);
-        setAnimStage('exiting');
-        setTimeout(() => {
-          onLoginSuccess(data.user);
-        }, 500);
-      } else {
-        const nameToUse = displayName.trim() || username.trim();
-        const data = await api.register(username.trim(), nameToUse, password);
-        setSuccessMsg(`Account created! Welcome to Talksy, ${data.user.displayName}!`);
-        setAnimStage('exiting');
-        setTimeout(() => {
-          onLoginSuccess(data.user);
-        }, 500);
-      }
+      const data = await api.login(username.trim(), password);
+      setSuccessMsg(`Welcome back, ${data.user.displayName}!`);
+      setAnimStage('exiting');
+      setTimeout(() => {
+        onLoginSuccess(data.user);
+      }, 500);
     } catch (err: any) {
-      setError(err.message || 'Operation failed. Please verify credentials.');
+      setError(err.message || 'Login failed. Please verify credentials.');
       setLoading(false);
     }
   };
@@ -153,7 +139,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[#E8F0FA] mb-2 drop-shadow-[0_4px_16px_rgba(0,214,143,0.4)]">
-            Talksy
+            ZappChat
           </h1>
           <p className="text-sm text-[#00D68F] font-semibold tracking-wider uppercase">
             Your world · Your conversations
@@ -178,7 +164,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <Logo size="lg" showText={false} glow={true} animated={false} />
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#E8F0FA]">
-              Talksy
+              ZappChat
             </h2>
             <p className="text-[#00D68F] text-xs font-semibold tracking-wider mt-0.5 uppercase">
               Your world · Your conversations
@@ -191,37 +177,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#00D68F] to-transparent opacity-80" />
 
             {/* Login / Signup Segmented Control */}
-            <div className="flex p-1 bg-[#111E2D] border border-[#1E3042] rounded-2xl mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setError(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  mode === 'login'
-                    ? 'bg-[#00D68F] text-[#07111F] shadow-sm'
-                    : 'text-[#94A3B8] hover:text-[#E8F0FA]'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('signup');
-                  setError(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  mode === 'signup'
-                    ? 'bg-[#00D68F] text-[#07111F] shadow-sm'
-                    : 'text-[#94A3B8] hover:text-[#E8F0FA]'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
             {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 rounded-xl bg-[#F87171]/15 border border-[#F87171]/40 text-[#F87171] text-xs flex items-start gap-2.5 animate-in fade-in duration-200">
@@ -253,7 +208,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g. zayan"
+                    placeholder="Enter your user ID"
                     autoComplete="username"
                     className="w-full pl-10 pr-4 py-2.5 bg-[#111E2D] border border-[#1E3042] rounded-xl text-sm text-[#E8F0FA] placeholder-[#94A3B8] focus:outline-none focus:border-[#00D68F] transition-all"
                     required
@@ -261,42 +216,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              {/* Display Name (Only in Signup Mode) */}
-              {mode === 'signup' && (
-                <div className="animate-in fade-in duration-200">
-                  <label className="block text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-1.5">
-                    Your Name
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8] group-focus-within:text-[#00D68F] transition-colors">
-                      <UserCheck className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="e.g. Zayan Khan"
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#111E2D] border border-[#1E3042] rounded-xl text-sm text-[#E8F0FA] placeholder-[#94A3B8] focus:outline-none focus:border-[#00D68F] transition-all"
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Password */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">
                     Password
                   </label>
-                  {mode === 'login' && (
-                    <button
-                      type="button"
-                      onClick={openForgotPassword}
-                      className="text-xs text-[#00D68F] hover:text-[#00B87A] transition-colors cursor-pointer"
-                    >
-                      Forgot?
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={openForgotPassword}
+                    className="text-xs text-[#00D68F] hover:text-[#00B87A] transition-colors cursor-pointer"
+                  >
+                    Forgot?
+                  </button>
                 </div>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8] group-focus-within:text-[#00D68F] transition-colors">
@@ -307,7 +239,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    autoComplete="current-password"
                     className="w-full pl-10 pr-11 py-2.5 bg-[#111E2D] border border-[#1E3042] rounded-xl text-sm text-[#E8F0FA] placeholder-[#94A3B8] focus:outline-none focus:border-[#00D68F] transition-all"
                     required
                   />
@@ -332,7 +264,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <div className="w-5 h-5 border-2 border-[#07111F]/30 border-t-[#07111F] rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>{mode === 'login' ? 'Enter Talksy' : 'Create Account & Enter'}</span>
+                    <span>Enter ZappChat</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -341,7 +273,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             {/* Bottom footnote */}
             <div className="mt-6 text-center text-xs text-[#94A3B8] flex items-center justify-center gap-2">
-              <Shield className="w-3.5 h-3.5 text-[#00D68F]" />
+              <Shield
+                className="w-3.5 h-3.5 text-[#00D68F] cursor-default select-none"
+                onClick={(e) => {
+                  // Discrete hidden 5-click easter egg trigger for touch devices without keyboard
+                  if (e.detail === 5 && onOpenAdminLogin) {
+                    onOpenAdminLogin();
+                  }
+                }}
+              />
               <span>Encrypted peer communications · Protected credentials</span>
             </div>
           </div>

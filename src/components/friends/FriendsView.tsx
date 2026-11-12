@@ -43,10 +43,12 @@ export const FriendsView: React.FC<FriendsViewProps> = ({
         api.getFriendSuggestions(),
         api.getFriends(),
       ]);
-      setIncomingRequests(reqData.incoming);
-      setOutgoingRequests(reqData.outgoing);
-      setSuggestions(suggData);
-      setFriendsList(friends);
+      const filterAdmin = <T extends { role?: string; id?: string }>(list: T[]) =>
+        currentUser.role === 'admin' ? list : list.filter((u) => u.role !== 'admin' && u.id !== 'admin');
+      setIncomingRequests((reqData.incoming || []).filter(r => currentUser.role === 'admin' || (r.fromUser?.role !== 'admin' && r.fromUserId !== 'admin')));
+      setOutgoingRequests(reqData.outgoing || []);
+      setSuggestions(filterAdmin(suggData || []));
+      setFriendsList(filterAdmin(friends || []));
     } catch (err) {
       console.error('Failed to load friends data:', err);
     } finally {
@@ -122,7 +124,7 @@ export const FriendsView: React.FC<FriendsViewProps> = ({
               <span>Friends & Community Network</span>
             </h1>
             <p className="text-xs text-[#94A3B8] mt-1">
-              Connect with authorized Talksy members, manage requests, and explore mutual connections.
+              Connect with authorized ZappChat members, manage requests, and explore mutual connections.
             </p>
           </div>
 
@@ -287,7 +289,7 @@ export const FriendsView: React.FC<FriendsViewProps> = ({
         {activeTab === 'suggestions' && (
           <div className="space-y-4">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Suggested People in Talksy
+              Suggested People in ZappChat
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -325,7 +327,7 @@ export const FriendsView: React.FC<FriendsViewProps> = ({
                       </div>
 
                       <p className="text-xs text-slate-400 mt-2 line-clamp-2 max-w-[200px]">
-                        {person.bio || 'Talksy community member'}
+                        {person.bio || 'ZappChat community member'}
                       </p>
 
                       <div className="w-full flex items-center justify-center gap-2 mt-4 pt-3 border-t border-slate-800">

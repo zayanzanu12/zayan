@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
-import { User, X, Camera, Lock, Check, AlertCircle, LogOut, Shield, Clock, Laptop } from 'lucide-react';
+import {
+  User,
+  X,
+  Camera,
+  Lock,
+  Check,
+  AlertCircle,
+  LogOut,
+  Shield,
+  Clock,
+  Laptop,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Key,
+  AtSign,
+} from 'lucide-react';
 import { User as UserType } from '../../types/chat';
 import { api } from '../../services/api';
 
@@ -48,10 +64,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [status, setStatus] = useState(user.status || 'Available');
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '');
 
+  // User ID / Username change field
+  const [newUserId, setNewUserId] = useState(user.id);
+  const [updatingUserId, setUpdatingUserId] = useState(false);
+
   // Password fields
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -96,8 +119,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       return;
     }
 
-    if (newPassword.length < 5) {
-      setFeedback({ type: 'error', message: 'New password must be at least 5 characters long' });
+    if (newPassword.length < 3) {
+      setFeedback({ type: 'error', message: 'New password must be at least 3 characters long' });
       return;
     }
 
@@ -116,6 +139,50 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleChangeUserId = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSelf) return;
+
+    const trimmed = newUserId.trim().toLowerCase();
+    if (!trimmed) {
+      setFeedback({ type: 'error', message: 'User ID cannot be empty' });
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(trimmed)) {
+      setFeedback({
+        type: 'error',
+        message: 'User ID must be 3-30 alphanumeric characters, underscores, dashes, or dots',
+      });
+      return;
+    }
+
+    setUpdatingUserId(true);
+    setFeedback(null);
+
+    try {
+      const res = await api.changeUsername(trimmed);
+      setFeedback({ type: 'success', message: res.message || `User ID updated to @${trimmed}!` });
+      onUserUpdated(res.user);
+      setTimeout(() => setFeedback(null), 3500);
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Failed to update User ID' });
+    } finally {
+      setUpdatingUserId(false);
+    }
+  };
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 10; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pwd);
+    setConfirmPassword(pwd);
+    setShowNewPass(true);
+    setShowConfirmPass(true);
   };
 
   const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,13 +445,160 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Self Security & Password Tab */}
           {isSelf && activeTab === 'security' && (
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              {/* Linked Devices Access */}
-              <div className="p-3.5 rounded-2xl bg-[#111E2D] border border-[#1E3042] flex items-center justify-between">
+            <div className="space-y-6">
+              {/* SECTION 1: Change User ID / Username */}
+              <form onSubmit={handleChangeUserId} className="p-4 rounded-2xl bg-[#091122] border border-[#1E3042] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AtSign className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-[#E8F0FA]">Change User ID (@username)</h4>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Current: @{user.id}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+                  Your unique handle used for logging in and for mentions across conversations.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-mono text-xs font-bold">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={newUserId}
+                      onChange={(e) => setNewUserId(e.target.value.toLowerCase().trim())}
+                      placeholder="new_username"
+                      className="w-full pl-8 pr-3 py-2 bg-[#050811] border border-[#1E3042] rounded-xl text-xs font-mono text-[#E8F0FA] placeholder-neutral-500 focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={updatingUserId || !newUserId.trim() || newUserId.trim().toLowerCase() === user.id}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-slate-950 font-bold text-xs transition-colors cursor-pointer shrink-0 shadow-sm"
+                  >
+                    {updatingUserId ? 'Updating...' : 'Save User ID'}
+                  </button>
+                </div>
+              </form>
+
+              {/* SECTION 2: Change Password */}
+              <form onSubmit={handleChangePassword} className="p-4 rounded-2xl bg-[#091122] border border-[#1E3042] space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-[#E8F0FA]">Change Account Password</h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Generate Strong Password</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+                  Update your login password securely. All passwords are encrypted on the server with salted cryptographic hashing.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#94A3B8] mb-1">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
+                      <Key className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type={showCurrentPass ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter existing password"
+                      className="w-full pl-9 pr-10 py-2 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-emerald-400 font-mono"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#E8F0FA] p-0.5 cursor-pointer"
+                    >
+                      {showCurrentPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#94A3B8] mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
+                      <Lock className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimum 5 characters"
+                      className="w-full pl-9 pr-10 py-2 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-emerald-400 font-mono"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#E8F0FA] p-0.5 cursor-pointer"
+                    >
+                      {showNewPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#94A3B8] mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
+                      <Lock className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type={showConfirmPass ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full pl-9 pr-10 py-2 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-emerald-400 font-mono"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#E8F0FA] p-0.5 cursor-pointer"
+                    >
+                      {showConfirmPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving || !currentPassword || !newPassword}
+                    className="py-2 px-5 rounded-xl bg-gradient-to-r from-emerald-400 to-[#00D68F] hover:from-emerald-300 hover:to-[#00B87A] text-[#07111F] font-black text-xs transition-all disabled:opacity-40 cursor-pointer shadow-md"
+                  >
+                    {saving ? 'Updating Password...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+
+              {/* SECTION 3: Linked Devices */}
+              <div className="p-3.5 rounded-2xl bg-[#091122] border border-[#1E3042] flex items-center justify-between">
                 <div>
                   <h4 className="text-xs font-semibold text-[#E8F0FA] flex items-center gap-1.5">
                     <Laptop className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Linked Devices</span>
+                    <span>Linked Devices &amp; Sessions</span>
                   </h4>
                   <p className="text-[11px] text-[#94A3B8] mt-0.5">Manage and revoke active multi-device sessions</p>
                 </div>
@@ -395,84 +609,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       onClose();
                       onOpenLinkedDevices();
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-[#00D68F]/15 hover:bg-[#00D68F]/25 text-[#00D68F] border border-[#00D68F]/30 text-xs font-semibold transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-colors cursor-pointer"
                   >
                     Manage
                   </button>
                 )}
               </div>
-
-              <div className="p-3 rounded-2xl bg-[#111E2D] border border-[#1E3042] text-xs text-[#94A3B8] leading-relaxed">
-                Update your account password securely. All passwords are encrypted on the server with salted cryptographic hashing.
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#94A3B8] mb-1.5">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter existing password"
-                    className="w-full pl-10 pr-4 py-2 bg-[#111E2D] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-[#00D68F]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#94A3B8] mb-1.5">
-                  New Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Minimum 5 characters"
-                    className="w-full pl-10 pr-4 py-2 bg-[#111E2D] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-[#00D68F]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#94A3B8] mb-1.5">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter new password"
-                    className="w-full pl-10 pr-4 py-2 bg-[#111E2D] border border-[#1E3042] rounded-xl text-xs text-[#E8F0FA] focus:outline-none focus:border-[#00D68F]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="py-2 px-5 rounded-xl bg-[#00D68F] hover:bg-[#00B87A] text-[#07111F] font-bold text-xs transition-all disabled:opacity-50 cursor-pointer shadow-sm"
-                >
-                  {saving ? 'Updating...' : 'Update Password'}
-                </button>
-              </div>
-            </form>
+            </div>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   MessageSquare,
   Search,
@@ -9,6 +9,9 @@ import {
   Image,
   FileText,
   UserPlus,
+  Sparkles,
+  Star,
+  Users,
 } from 'lucide-react';
 import { User, FriendContact } from '../../types/chat';
 
@@ -22,6 +25,8 @@ interface SidebarProps {
   typingUsers: Record<string, boolean>;
 }
 
+type ContactCategory = 'all' | 'direct' | 'vip' | 'ai' | 'unread';
+
 export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   friends,
@@ -32,15 +37,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   typingUsers,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<ContactCategory>('all');
 
-  const filteredFriends = friends.filter((f) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      f.displayName.toLowerCase().includes(term) ||
-      f.id.toLowerCase().includes(term) ||
-      (f.status && f.status.toLowerCase().includes(term))
-    );
-  });
+  const filteredFriends = useMemo(() => {
+    return friends.filter((f) => {
+      // Hide admin profile from regular users
+      if (currentUser.role !== 'admin' && (f.role === 'admin' || f.id === 'admin')) {
+        return false;
+      }
+
+      // Category filter
+      if (selectedCategory === 'vip' && f.role !== 'admin' && !f.status?.toLowerCase().includes('vip')) {
+        return false;
+      }
+      if (selectedCategory === 'ai' && f.id !== 'zapp_ai' && !f.id.includes('ai')) {
+        return false;
+      }
+      if (selectedCategory === 'unread' && (!f.unreadCount || f.unreadCount === 0)) {
+        return false;
+      }
+
+      // Search filter
+      const term = searchTerm.toLowerCase();
+      return (
+        f.displayName.toLowerCase().includes(term) ||
+        f.id.toLowerCase().includes(term) ||
+        (f.status && f.status.toLowerCase().includes(term))
+      );
+    });
+  }, [friends, selectedCategory, searchTerm, currentUser.role]);
 
   const formatMessageTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -85,6 +110,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
         </button>
+      </div>
+
+      {/* Categories Filter Tabs */}
+      <div className="px-3 py-2 bg-[#0A1624] border-b border-[#1E3042]/70 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        {(
+          [
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread' },
+            { id: 'ai', label: 'AI' },
+            { id: 'vip', label: 'VIP' },
+          ] as const
+        ).map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
+              selectedCategory === cat.id
+                ? 'bg-[#00C98D] text-[#071310] font-semibold shadow-sm'
+                : 'text-[#91A99C] hover:text-[#F4FFF9] hover:bg-[#142A22]'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
       </div>
 
       {/* Conversations List */}

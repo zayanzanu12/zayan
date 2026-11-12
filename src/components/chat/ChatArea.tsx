@@ -22,6 +22,13 @@ import {
   Maximize2,
   Phone,
   Video,
+  Type,
+  Sparkles,
+  Pin,
+  Bookmark,
+  Clock,
+  FolderArchive,
+  Eye,
 } from 'lucide-react';
 import { User, Message, Reaction, FriendContact } from '../../types/chat';
 import { api } from '../../services/api';
@@ -30,6 +37,8 @@ import { VoiceRecorder } from './VoiceRecorder';
 import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 import { GifPickerModal } from './GifPickerModal';
 import { AttachmentModal } from './AttachmentModal';
+import { TextStudioModal } from './TextStudioModal';
+import { AiComposerToolbar } from '../spatial/AiComposerToolbar';
 
 interface ChatAreaProps {
   currentUser: User;
@@ -39,6 +48,9 @@ interface ChatAreaProps {
   isTyping: boolean;
   onStartVoiceCall?: () => void;
   onStartVideoCall?: () => void;
+  onOpenAiTopics?: (friendId: string, friendName: string) => void;
+  onOpenMediaCollection?: (conversationId: string, title: string) => void;
+  onOpenFilePreview?: (file: { url: string; name: string; type?: string; size?: number }) => void;
 }
 
 const COMMON_EMOJIS = ['👍', '❤️', '🔥', '😂', '😮', '😢', '👏', '🙏', '🎉', '💯'];
@@ -52,12 +64,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   isTyping,
   onStartVoiceCall,
   onStartVideoCall,
+  onOpenAiTopics,
+  onOpenMediaCollection,
+  onOpenFilePreview,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+
+  // ZappChat 2.0 Spatial & AI States
+  const [showAiComposer, setShowAiComposer] = useState(false);
+  const [pinnedMessage, setPinnedMessage] = useState<Message | null>(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   // Modals & Panels
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
@@ -76,13 +96,34 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [reportReason, setReportReason] = useState('');
   const [reportSent, setReportSent] = useState(false);
 
+  // Clear direct chat modal state
+  const [showClearChatModal, setShowClearChatModal] = useState(false);
+  const [clearingChat, setClearingChat] = useState(false);
+
+  // Creative TextStudio typography modal
+  const [showTextStudio, setShowTextStudio] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
 
-  // Fetch conversation messages
+  // Fetch conversation messages and pinned message
   useEffect(() => {
     loadConversation();
+    loadPinnedMessage();
   }, [activeFriend.id]);
+
+  const loadPinnedMessage = async () => {
+    try {
+      const res = await api.getPinnedMessage(activeFriend.id);
+      if (res.message) {
+        setPinnedMessage(res.message);
+      } else {
+        setPinnedMessage(null);
+      }
+    } catch {
+      setPinnedMessage(null);
+    }
+  };
 
   const loadConversation = async () => {
     setLoading(true);
@@ -191,6 +232,28 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       }
     });
 
+    eventSource.addEventListener('conversation_cleared', (e) => {
+      try {
+        const { userA, userB } = JSON.parse(e.data);
+        if (
+          (userA === activeFriend.id && userB === currentUser.id) ||
+          (userA === currentUser.id && userB === activeFriend.id)
+        ) {
+          setMessages([]);
+        }
+      } catch (err) {
+        console.error('SSE conversation_cleared error', err);
+      }
+    });
+
+    eventSource.addEventListener('all_direct_messages_cleared', () => {
+      setMessages([]);
+    });
+
+    eventSource.addEventListener('all_messages_cleared', () => {
+      setMessages([]);
+    });
+
     return () => {
       eventSource.close();
     };
@@ -214,6 +277,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (currentUser.role === 'admin') {
+      alert('Administrators cannot message users. Administrator accounts have control and moderation permissions only.');
+      return;
+    }
+
     if (!inputText.trim()) return;
 
     const textToSend = inputText.trim();
@@ -261,6 +330,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   // Send Voice Note
   const handleSendVoice = async (audioBase64: string, durationSeconds: number) => {
     setShowVoiceRecorder(false);
+    if (currentUser.role === 'admin') {
+      alert('Administrators cannot message users. Administrator accounts have control and moderation permissions only.');
+      return;
+    }
     try {
       // First upload audio file
       const upload = await api.uploadFile(audioBase64, `voice_${Date.now()}.webm`, 'audio/webm');
@@ -285,6 +358,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   // Send GIF
   const handleSendGif = async (gifUrl: string) => {
     setShowGifPicker(false);
+    if (currentUser.role === 'admin') {
+      alert('Administrators cannot message users. Administrator accounts have control and moderation permissions only.');
+      return;
+    }
     try {
       const msg = await api.sendMessage({
         receiverId: activeFriend.id,
@@ -311,6 +388,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     fileSize: number;
     caption?: string;
   }) => {
+    if (currentUser.role === 'admin') {
+      alert('Administrators cannot message users. Administrator accounts have control and moderation permissions only.');
+      return;
+    }
     try {
       const msg = await api.sendMessage({
         receiverId: activeFriend.id,
@@ -345,12 +426,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
   };
 
-  // Delete message
+  // Delete direct message with press button (NO window.confirm)
   const handleDeleteMessage = async (msg: Message) => {
     setActiveMenuMessageId(null);
-    const confirmed = window.confirm('Delete this message?');
-    if (!confirmed) return;
-
     try {
       await api.deleteMessage(msg.id);
       setMessages((prev) =>
@@ -368,7 +446,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         )
       );
     } catch (err: any) {
-      alert(err.message || 'Failed to delete message');
+      console.error('Failed to delete message:', err);
+    }
+  };
+
+  // Clear all direct messages in conversation with press button
+  const handleClearConversation = async () => {
+    setClearingChat(true);
+    try {
+      await api.clearConversation(activeFriend.id);
+      setMessages([]);
+      setShowClearChatModal(false);
+    } catch (err: any) {
+      console.error('Failed to clear conversation:', err);
+    } finally {
+      setClearingChat(false);
     }
   };
 
@@ -377,6 +469,53 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setActiveMenuMessageId(null);
     setEditingMessage(msg);
     setInputText(msg.text);
+  };
+
+  // Pin / Unpin message
+  const handleTogglePin = async (msg: Message) => {
+    setActiveMenuMessageId(null);
+    try {
+      if (pinnedMessage?.id === msg.id) {
+        await api.unpinMessage(activeFriend.id, msg.id);
+        setPinnedMessage(null);
+      } else {
+        await api.pinMessage(activeFriend.id, msg.id);
+        setPinnedMessage(msg);
+      }
+    } catch (err) {
+      console.error('Failed to toggle pin:', err);
+    }
+  };
+
+  // Toggle Bookmark
+  const handleToggleBookmark = async (msg: Message) => {
+    setActiveMenuMessageId(null);
+    try {
+      const res = await api.toggleBookmark(msg.id);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (res.isBookmarked) {
+          next.add(msg.id);
+        } else {
+          next.delete(msg.id);
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error('Failed to bookmark:', err);
+    }
+  };
+
+  // Quick Reminder (in 1 hour)
+  const handleQuickReminder = async (msg: Message) => {
+    setActiveMenuMessageId(null);
+    try {
+      const remindAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await api.createReminder(msg.id, remindAt, `Follow up: ${msg.text ? msg.text.slice(0, 40) : 'attachment'}`);
+      alert('Reminder set for 1 hour from now');
+    } catch (err) {
+      console.error('Failed to create reminder:', err);
+    }
   };
 
   // Submit report
@@ -478,8 +617,31 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </button>
         </div>
 
-        {/* Top Header Actions: Voice Call, Video Call, Search, Info */}
+        {/* Top Header Actions: AI Topics, Media Gallery, Voice Call, Video Call, Search, Info */}
         <div className="flex items-center gap-1">
+          {onOpenAiTopics && (
+            <button
+              type="button"
+              onClick={() => onOpenAiTopics(activeFriend.id, activeFriend.displayName)}
+              title="Zapp AI Topics & Action Items"
+              className="p-2 rounded-xl text-[#63F5C0] hover:bg-[#00C98D]/20 transition-all cursor-pointer relative group"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="sr-only">AI Topics</span>
+            </button>
+          )}
+
+          {onOpenMediaCollection && (
+            <button
+              type="button"
+              onClick={() => onOpenMediaCollection(activeFriend.id, activeFriend.displayName)}
+              title="Media, Files & Links Gallery"
+              className="p-2 rounded-xl text-[#94A3B8] hover:text-[#00C98D] hover:bg-[#111E2D] transition-colors cursor-pointer"
+            >
+              <FolderArchive className="w-4 h-4" />
+            </button>
+          )}
+
           {onStartVideoCall && (
             <button
               type="button"
@@ -519,8 +681,40 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           >
             <Info className="w-4 h-4" />
           </button>
+
+          {/* Delete All Direct Messages with this contact */}
+          <button
+            type="button"
+            onClick={() => setShowClearChatModal(true)}
+            title="Delete all direct messages with this contact"
+            className="p-2 rounded-xl text-[#94A3B8] hover:text-[#F87171] hover:bg-red-500/10 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* Pinned Message Banner */}
+      {pinnedMessage && (
+        <div className="px-4 py-2 bg-[#00C98D]/10 border-b border-[#00C98D]/25 flex items-center justify-between text-xs animate-in slide-in-from-top-1">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Pin className="w-3.5 h-3.5 text-[#00C98D] shrink-0" />
+            <div className="min-w-0 truncate">
+              <span className="font-semibold text-[#63F5C0] mr-2">Pinned:</span>
+              <span className="text-[#F4FFF9]/90 truncate">
+                {pinnedMessage.text || `[Attachment: ${pinnedMessage.mediaType}]`}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => handleTogglePin(pinnedMessage)}
+            title="Unpin message"
+            className="text-[11px] text-[#91A99C] hover:text-[#F4FFF9] px-2 py-0.5 rounded hover:bg-[#00C98D]/20 cursor-pointer"
+          >
+            Unpin
+          </button>
+        </div>
+      )}
 
       {/* In-Chat Search Bar Dropdown */}
       {showSearch && (
@@ -590,6 +784,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       : 'bg-[#152435] text-[#E8F0FA] rounded-bl-xs border border-[#1E3042]'
                   }`}
                 >
+                  {/* Admin Instant Quick Delete Button */}
+                  {currentUser.role === 'admin' && !msg.isDeleted && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMessage(msg);
+                      }}
+                      title="Admin Control: Delete message instantly"
+                      className="absolute top-1.5 right-7 p-1 rounded-full bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10 border border-rose-500/30"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   {/* Context menu toggle button */}
                   {!msg.isDeleted && (
                     <button
@@ -787,6 +996,36 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <span>Reply</span>
                     </button>
 
+                    {/* Pin / Unpin */}
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePin(msg)}
+                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2 text-left cursor-pointer"
+                    >
+                      <Pin className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{pinnedMessage?.id === msg.id ? 'Unpin message' : 'Pin to chat'}</span>
+                    </button>
+
+                    {/* Bookmark / Star */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleBookmark(msg)}
+                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2 text-left cursor-pointer"
+                    >
+                      <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{bookmarkedIds.has(msg.id) ? 'Remove Bookmark' : 'Bookmark message'}</span>
+                    </button>
+
+                    {/* Reminder */}
+                    <button
+                      type="button"
+                      onClick={() => handleQuickReminder(msg)}
+                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2 text-left cursor-pointer"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-teal-400" />
+                      <span>Remind in 1h</span>
+                    </button>
+
                     {isSelf && !msg.isDeleted && msg.text && (
                       <button
                         type="button"
@@ -885,95 +1124,182 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       )}
 
-      {/* Bottom Input Area */}
-      <div className="p-3 sm:p-4 bg-[#0D1B2A] border-t border-[#1E3042] shrink-0 relative z-20">
-        {showVoiceRecorder ? (
-          <VoiceRecorder
-            onSend={handleSendVoice}
-            onCancel={() => setShowVoiceRecorder(false)}
-          />
-        ) : (
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-            {/* Attachment Button */}
-            <button
-              type="button"
-              onClick={() => setShowAttachmentModal(true)}
-              title="Attach media or document"
-              className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer"
-            >
-              <Paperclip className="w-5 h-5" />
-            </button>
-
-            {/* GIF Button */}
-            <button
-              type="button"
-              onClick={() => setShowGifPicker(true)}
-              title="Search and send GIFs"
-              className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer text-xs font-bold"
-            >
-              GIF
-            </button>
-
-            {/* Emoji Picker Trigger */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                title="Emoji picker"
-                className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer"
-              >
-                <Smile className="w-5 h-5" />
-              </button>
-
-              {/* Emoji Popover */}
-              {showEmojiPicker && (
-                <div className="absolute bottom-12 left-0 p-3 bg-[#0D1B2A] border border-[#1E3042] rounded-2xl shadow-2xl grid grid-cols-5 gap-2 z-30">
-                  {COMMON_EMOJIS.map((em) => (
-                    <button
-                      key={em}
-                      type="button"
-                      onClick={() => {
-                        setInputText((prev) => prev + em);
-                        setShowEmojiPicker(false);
-                      }}
-                      className="text-xl p-1.5 rounded-lg hover:bg-[#111E2D] transition-transform hover:scale-125 cursor-pointer"
-                    >
-                      {em}
-                    </button>
-                  ))}
+      {/* Bottom Area: Admin Supervision Bar vs User Input Composer */}
+      <div className="p-3 sm:p-4 bg-[#0D1E18] border-t border-[#294438] shrink-0 relative z-20">
+        {currentUser.role === 'admin' ? (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#071310] border border-[#294438] shadow-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-[#F4FFF9] text-xs flex items-center gap-2 flex-wrap">
+                  <span>Administrator Supervision Mode</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider font-mono font-semibold">
+                    Control Only
+                  </span>
                 </div>
-              )}
+                <p className="text-[11px] text-[#91A99C] truncate">
+                  Admin cannot send messages to users. You have full moderation control to delete, search, and manage chats.
+                </p>
+              </div>
             </div>
 
-            {/* Text Input */}
-            <input
-              type="text"
-              value={inputText}
-              onChange={handleInputChange}
-              placeholder="Type a message..."
-              className="flex-1 py-2.5 px-4 bg-[#111E2D] border border-[#1E3042] rounded-xl text-sm text-[#E8F0FA] placeholder-[#94A3B8] focus:outline-none focus:border-[#00D68F] transition-all"
-            />
-
-            {/* Send or Voice Button */}
-            {inputText.trim() ? (
-              <button
-                type="submit"
-                title="Send message"
-                className="w-10 h-10 rounded-xl bg-[#00D68F] hover:bg-[#00B87A] text-[#07111F] flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95"
-              >
-                <Send className="w-4 h-4 ml-0.5" />
-              </button>
-            ) : (
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <button
                 type="button"
-                onClick={() => setShowVoiceRecorder(true)}
-                title="Record voice message"
-                className="w-10 h-10 rounded-xl bg-[#111E2D] hover:bg-[#00D68F] text-[#00D68F] hover:text-[#07111F] flex items-center justify-center transition-all cursor-pointer border border-[#1E3042]"
+                onClick={() => setShowSearch(!showSearch)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showSearch
+                    ? 'bg-[#00C98D]/20 border-[#00C98D] text-[#63F5C0]'
+                    : 'bg-[#142A22] border-[#294438] hover:border-[#00C98D]/40 text-[#63F5C0]'
+                }`}
+                title="Search conversation messages"
               >
-                <Mic className="w-4 h-4" />
+                <Search className="w-3.5 h-3.5" />
+                <span>Search</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowClearChatModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Delete and purge entire chat history"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Purge Chat</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Zapp AI Message Writer Toolbar */}
+            {showAiComposer && (
+              <div className="mb-3">
+                <AiComposerToolbar
+                  currentText={inputText}
+                  onApplyText={(styled: string) => {
+                    setInputText(styled);
+                    setShowAiComposer(false);
+                  }}
+                  onClose={() => setShowAiComposer(false)}
+                />
+              </div>
             )}
-          </form>
+
+            {showVoiceRecorder ? (
+              <VoiceRecorder
+                onSend={handleSendVoice}
+                onCancel={() => setShowVoiceRecorder(false)}
+              />
+            ) : (
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                {/* Attachment Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAttachmentModal(true)}
+                  title="Attach media or document"
+                  className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+
+                {/* GIF Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowGifPicker(true)}
+                  title="Search and send GIFs"
+                  className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer text-xs font-bold"
+                >
+                  GIF
+                </button>
+
+                {/* Zapp AI Assistant Writer Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAiComposer(!showAiComposer)}
+                  title="Zapp AI Writer (Tone, Polish & Expressive styles)"
+                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                    showAiComposer
+                      ? 'bg-[#00C98D]/20 text-[#63F5C0] shadow-sm ring-1 ring-[#00C98D]/50'
+                      : 'text-[#94A3B8] hover:text-[#63F5C0] hover:bg-[#111E2D]'
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+
+                {/* Creative TextStudio Typography Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowTextStudio(true)}
+                  title="Creative Typography & Text Styles"
+                  className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer"
+                >
+                  <Type className="w-5 h-5" />
+                </button>
+
+                {/* Emoji Picker Trigger */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    title="Emoji picker"
+                    className="p-2.5 rounded-xl text-[#94A3B8] hover:text-[#00D68F] hover:bg-[#111E2D] transition-colors cursor-pointer"
+                  >
+                    <Smile className="w-5 h-5" />
+                  </button>
+
+                  {/* Emoji Popover */}
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-12 left-0 p-3 bg-[#0D1B2A] border border-[#1E3042] rounded-2xl shadow-2xl grid grid-cols-5 gap-2 z-30">
+                      {COMMON_EMOJIS.map((em) => (
+                        <button
+                          key={em}
+                          type="button"
+                          onClick={() => {
+                            setInputText((prev) => prev + em);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="text-xl p-1.5 rounded-lg hover:bg-[#111E2D] transition-transform hover:scale-125 cursor-pointer"
+                        >
+                          {em}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Text Input */}
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder="Type a message..."
+                  className="flex-1 py-2.5 px-4 bg-[#111E2D] border border-[#1E3042] rounded-xl text-sm text-[#E8F0FA] placeholder-[#94A3B8] focus:outline-none focus:border-[#00D68F] transition-all"
+                />
+
+                {/* Send or Voice Button */}
+                {inputText.trim() ? (
+                  <button
+                    type="submit"
+                    title="Send message"
+                    className="w-10 h-10 rounded-xl bg-[#00D68F] hover:bg-[#00B87A] text-[#07111F] flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <Send className="w-4 h-4 ml-0.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowVoiceRecorder(true)}
+                    title="Record voice message"
+                    className="w-10 h-10 rounded-xl bg-[#111E2D] hover:bg-[#00D68F] text-[#00D68F] hover:text-[#07111F] flex items-center justify-center transition-all cursor-pointer border border-[#1E3042]"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+                )}
+              </form>
+            )}
+          </>
         )}
       </div>
 
@@ -989,6 +1315,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         isOpen={showAttachmentModal}
         onClose={() => setShowAttachmentModal(false)}
         onSendAttachment={handleSendAttachment}
+      />
+
+      {/* Creative TextStudio Modal */}
+      <TextStudioModal
+        isOpen={showTextStudio}
+        onClose={() => setShowTextStudio(false)}
+        onApplyToChat={(styledText) => {
+          setInputText((prev) => (prev.trim() ? `${prev} ${styledText}` : styledText));
+        }}
+        initialText={inputText || ''}
       />
 
       {/* Enlarge Image Modal */}
@@ -1074,6 +1410,38 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Clear Direct Chat Confirmation Modal */}
+      {showClearChatModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0D1B2A] border border-red-500/40 rounded-2xl w-full max-w-sm p-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center gap-2.5 text-red-400 mb-3">
+              <Trash2 className="w-5 h-5" />
+              <h3 className="text-sm font-bold text-[#E8F0FA]">Clear Conversation?</h3>
+            </div>
+            <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
+              Are you sure you want to delete all direct messages with <strong className="text-[#E8F0FA]">{activeFriend.displayName}</strong>? Messages will be permanently purged from the database.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowClearChatModal(false)}
+                className="px-3.5 py-1.5 rounded-xl text-xs text-[#94A3B8] hover:text-[#E8F0FA] hover:bg-[#111E2D] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={clearingChat}
+                onClick={handleClearConversation}
+                className="px-4 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
+              >
+                {clearingChat ? 'Deleting...' : 'Delete All Messages'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -18,8 +18,11 @@ export const StoryTray: React.FC<StoryTrayProps> = ({
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Group stories or display newest per author
-  const myStories = stories.filter((s) => s.authorId === currentUser.id);
+  // Deduplicate stories to ensure unique keys and clean tray state
+  const uniqueStories = (stories || []).filter(
+    (s, idx, arr) => s && arr.findIndex((x) => x.id === s.id) === idx
+  );
+  const myStories = uniqueStories.filter((s) => s.authorId === currentUser.id);
 
   return (
     <>
@@ -31,7 +34,7 @@ export const StoryTray: React.FC<StoryTrayProps> = ({
               onClick={() => {
                 if (myStories.length > 0) {
                   // View my stories first, or click + to add
-                  setSelectedStoryIndex(stories.findIndex((s) => s.authorId === currentUser.id));
+                  setSelectedStoryIndex(uniqueStories.findIndex((s) => s.authorId === currentUser.id));
                 } else {
                   setShowCreateModal(true);
                 }
@@ -71,15 +74,15 @@ export const StoryTray: React.FC<StoryTrayProps> = ({
           </div>
 
           {/* Friends Stories */}
-          {stories
+          {uniqueStories
             .filter((s) => s.authorId !== currentUser.id)
             .map((story, idx) => {
-              const actualIndex = stories.findIndex((item) => item.id === story.id);
+              const actualIndex = uniqueStories.findIndex((item) => item.id === story.id);
               const isViewed = story.viewers?.includes(currentUser.id);
 
               return (
                 <div
-                  key={story.id}
+                  key={`${story.id}_${idx}`}
                   onClick={() => setSelectedStoryIndex(actualIndex)}
                   className="flex flex-col items-center gap-1.5 cursor-pointer group"
                 >
@@ -103,7 +106,7 @@ export const StoryTray: React.FC<StoryTrayProps> = ({
               );
             })}
 
-          {stories.length === 0 && (
+          {uniqueStories.length === 0 && (
             <div className="flex items-center gap-2 pl-2 text-xs text-slate-500 italic">
               <span>No stories yet. Be the first to share one!</span>
             </div>
@@ -114,7 +117,7 @@ export const StoryTray: React.FC<StoryTrayProps> = ({
       {/* Story Viewer Modal */}
       {selectedStoryIndex !== null && (
         <StoryViewerModal
-          stories={stories}
+          stories={uniqueStories}
           initialIndex={selectedStoryIndex}
           isOpen={selectedStoryIndex !== null}
           onClose={() => setSelectedStoryIndex(null)}

@@ -104,6 +104,13 @@ export const api = {
     });
   },
 
+  async changeUsername(newUserId: string): Promise<{ success: boolean; user: User; message: string }> {
+    return request<{ success: boolean; user: User; message: string }>('/api/auth/username', {
+      method: 'PUT',
+      body: JSON.stringify({ newUserId }),
+    });
+  },
+
   async getRecoverInfo(): Promise<{ adminId: string; adminEmail: string; message: string }> {
     return request('/api/auth/recover-info');
   },
@@ -188,6 +195,12 @@ export const api = {
     });
   },
 
+  async clearConversation(otherUserId: string): Promise<{ success: boolean; count: number }> {
+    return request<{ success: boolean; count: number }>(`/api/messages/conversation/${encodeURIComponent(otherUserId)}`, {
+      method: 'DELETE',
+    });
+  },
+
   async reactMessage(messageId: string, emoji: string): Promise<Reaction[]> {
     const data = await request<{ reactions: Reaction[] }>(`/api/messages/${encodeURIComponent(messageId)}/reactions`, {
       method: 'POST',
@@ -251,6 +264,7 @@ export const api = {
   },
 
   async adminUpdateUser(id: string, updates: {
+    newId?: string;
     displayName?: string;
     password?: string;
     avatarUrl?: string;
@@ -395,6 +409,12 @@ export const api = {
     });
   },
 
+  async deleteStory(storyId: string): Promise<{ success: boolean; id: string; message: string }> {
+    return request<{ success: boolean; id: string; message: string }>(`/api/stories/${encodeURIComponent(storyId)}`, {
+      method: 'DELETE',
+    });
+  },
+
   // ----------------------------------------------------
   // GROUPS & COMMUNITIES
   // ----------------------------------------------------
@@ -427,6 +447,19 @@ export const api = {
   async leaveGroup(groupId: string): Promise<{ group: Group; isMember: boolean }> {
     return request<{ group: Group; isMember: boolean }>(`/api/groups/${encodeURIComponent(groupId)}/leave`, {
       method: 'POST',
+    });
+  },
+
+  async addGroupMember(groupId: string, userId: string): Promise<{ success: boolean; group: Group; member: any; message: string }> {
+    return request<{ success: boolean; group: Group; member: any; message: string }>(`/api/groups/${encodeURIComponent(groupId)}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  async deleteGroup(groupId: string): Promise<{ success: boolean; message: string }> {
+    return request<{ success: boolean; message: string }>(`/api/groups/${encodeURIComponent(groupId)}`, {
+      method: 'DELETE',
     });
   },
 
@@ -572,6 +605,197 @@ export const api = {
   // ----------------------------------------------------
   async adminGetDiagnostics(): Promise<SystemDiagnostics> {
     return request<SystemDiagnostics>('/api/admin/diagnostics');
+  },
+
+  // ----------------------------------------------------
+  // GROUP MANAGEMENT (ADMIN)
+  // ----------------------------------------------------
+  async adminClearAllGroupChats(): Promise<{ success: boolean; message: string; purgedCount: number }> {
+    return request<{ success: boolean; message: string; purgedCount: number }>('/api/admin/groups/clear-all-chats', {
+      method: 'POST',
+    });
+  },
+
+  async adminClearAllDirectMessages(): Promise<{ success: boolean; message: string; purgedCount: number }> {
+    return request<{ success: boolean; message: string; purgedCount: number }>('/api/admin/messages/clear-all-direct', {
+      method: 'POST',
+    });
+  },
+
+  async adminClearAllMessages(): Promise<{ success: boolean; message: string; purgedCount: number }> {
+    return request<{ success: boolean; message: string; purgedCount: number }>('/api/admin/messages/clear-all', {
+      method: 'POST',
+    });
+  },
+
+  async adminCreateGroup(data: {
+    name: string;
+    description?: string;
+    isPrivate?: boolean;
+    tags?: string[];
+    avatarUrl?: string;
+  }): Promise<{ success: boolean; group: any }> {
+    return request<{ success: boolean; group: any }>('/api/admin/groups', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async adminClearAllChats(): Promise<{ success: boolean; message: string; purgedCount: number }> {
+    return request<{ success: boolean; message: string; purgedCount: number }>('/api/admin/messages/clear-all', {
+      method: 'POST',
+    });
+  },
+
+  async adminDeleteAllRegularUsers(): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    return request<{ success: boolean; message: string; deletedCount: number }>('/api/admin/users/delete-all-regular', {
+      method: 'POST',
+    });
+  },
+
+  // ----------------------------------------------------
+  // DATABASE CONNECT & ADMIN COMMAND CONSOLE
+  // ----------------------------------------------------
+  async adminGetDbConnection(): Promise<{
+    connected: boolean;
+    status: string;
+    engine: string;
+    dbFile: string;
+    sizeBytes: number;
+    sizeKb: string;
+    sizeMb: string;
+    lastModified: string;
+    latencyMs: number;
+    schemaVersion: string;
+    tables: {
+      users: number;
+      messages: number;
+      sessions: number;
+      groups: number;
+      reports: number;
+      posts: number;
+      stories: number;
+      inviteCodes: number;
+      bookmarks: number;
+      reminders: number;
+      pinnedMessages: number;
+    };
+  }> {
+    return request('/api/admin/db-connection');
+  },
+
+  async adminRunCommand(command: string): Promise<{
+    success: boolean;
+    command: string;
+    output: string;
+    data?: any;
+    executionTimeMs: number;
+    error?: string;
+  }> {
+    return request('/api/admin/command', {
+      method: 'POST',
+      body: JSON.stringify({ command }),
+    });
+  },
+
+  // ----------------------------------------------------
+  // ZAPPCHAT 2.0 SPATIAL & AI FEATURES
+  // ----------------------------------------------------
+  async aiWrite(text: string, mode: 'polish' | 'professional' | 'friendly' | 'concise' | 'expand' | 'fix_grammar'): Promise<{ result: string }> {
+    return request('/api/ai/write', {
+      method: 'POST',
+      body: JSON.stringify({ text, mode }),
+    });
+  },
+
+  async aiGetTopics(conversationId: string): Promise<{ summary: string; topics: string[]; actionItems: string[] }> {
+    return request('/api/ai/topics', {
+      method: 'POST',
+      body: JSON.stringify({ conversationId }),
+    });
+  },
+
+  async aiSearch(query: string): Promise<{ matches: Message[]; count: number }> {
+    return request('/api/ai/search', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
+  },
+
+  async aiTranscribe(audioUrl?: string, duration?: number): Promise<{ transcription: string; duration: number }> {
+    return request('/api/ai/transcribe', {
+      method: 'POST',
+      body: JSON.stringify({ audioUrl, duration }),
+    });
+  },
+
+  async toggleBookmark(messageId: string): Promise<{ success: boolean; isBookmarked: boolean }> {
+    return request(`/api/messages/${encodeURIComponent(messageId)}/bookmark`, {
+      method: 'POST',
+    });
+  },
+
+  async getBookmarks(): Promise<{ bookmarks: Message[] }> {
+    return request('/api/bookmarks');
+  },
+
+  async createReminder(messageId: string, remindAt: string, note?: string): Promise<{ reminder: any }> {
+    return request(`/api/messages/${encodeURIComponent(messageId)}/remind`, {
+      method: 'POST',
+      body: JSON.stringify({ remindAt, note }),
+    });
+  },
+
+  async getReminders(): Promise<{ reminders: any[] }> {
+    return request('/api/reminders');
+  },
+
+  async deleteReminder(id: string): Promise<{ success: boolean }> {
+    return request(`/api/reminders/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async pinMessage(conversationId: string, messageId: string): Promise<{ success: boolean; pin: any }> {
+    return request(`/api/conversations/${encodeURIComponent(conversationId)}/pin/${encodeURIComponent(messageId)}`, {
+      method: 'POST',
+    });
+  },
+
+  async unpinMessage(conversationId: string, messageId: string): Promise<{ success: boolean }> {
+    return request(`/api/conversations/${encodeURIComponent(conversationId)}/pin/${encodeURIComponent(messageId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getPinnedMessage(conversationId: string): Promise<{ pin: any; message: Message | null }> {
+    return request(`/api/conversations/${encodeURIComponent(conversationId)}/pinned`);
+  },
+
+  async getWorkspaceLayout(): Promise<{ layout: any }> {
+    return request('/api/workspace/layout');
+  },
+
+  async saveWorkspaceLayout(layout: any): Promise<{ success: boolean }> {
+    return request('/api/workspace/layout', {
+      method: 'PUT',
+      body: JSON.stringify({ layout }),
+    });
+  },
+
+  async getMediaCollection(conversationId: string): Promise<{
+    images: Message[];
+    videos: Message[];
+    audio: Message[];
+    documents: Message[];
+    links: Message[];
+    totalCount: number;
+  }> {
+    return request(`/api/conversations/${encodeURIComponent(conversationId)}/media-collection`);
+  },
+
+  async getGroupAuditLog(groupId: string): Promise<{ logs: any[] }> {
+    return request(`/api/groups/${encodeURIComponent(groupId)}/audit-log`);
   },
 };
 

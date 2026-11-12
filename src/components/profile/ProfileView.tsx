@@ -19,6 +19,8 @@ import {
   MessageCircle,
   Eye,
   EyeOff,
+  Sparkles,
+  AtSign,
 } from 'lucide-react';
 import { Post, User } from '../../types/chat';
 import { api } from '../../services/api';
@@ -77,6 +79,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // User ID and Password editing state
+  const [newUserId, setNewUserId] = useState(currentUser.id);
+  const [updatingUserId, setUpdatingUserId] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [credentialsFeedback, setCredentialsFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // Load target user profile
   useEffect(() => {
@@ -214,6 +231,99 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleChangeUserId = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSelf) return;
+
+    const trimmed = newUserId.trim().toLowerCase();
+    if (!trimmed) {
+      setCredentialsFeedback({ type: 'error', message: 'User ID cannot be empty' });
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(trimmed)) {
+      setCredentialsFeedback({
+        type: 'error',
+        message: 'User ID must be 3-30 alphanumeric characters, underscores, dashes, or dots',
+      });
+      return;
+    }
+
+    setUpdatingUserId(true);
+    setCredentialsFeedback(null);
+
+    try {
+      const res = await api.changeUsername(trimmed);
+      setCredentialsFeedback({
+        type: 'success',
+        message: res.message || `User ID updated to @${trimmed}!`,
+      });
+      setUserProfile(res.user);
+      onUserUpdated(res.user);
+      setTimeout(() => setCredentialsFeedback(null), 4000);
+    } catch (err: any) {
+      setCredentialsFeedback({ type: 'error', message: err.message || 'Failed to update User ID' });
+    } finally {
+      setUpdatingUserId(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSelf) return;
+
+    if (!currentPassword || !newPassword) {
+      setCredentialsFeedback({
+        type: 'error',
+        message: 'Please fill in both current and new passwords',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setCredentialsFeedback({
+        type: 'error',
+        message: 'New password and confirmation do not match',
+      });
+      return;
+    }
+
+    if (newPassword.length < 3) {
+      setCredentialsFeedback({
+        type: 'error',
+        message: 'New password must be at least 3 characters long',
+      });
+      return;
+    }
+
+    setUpdatingPassword(true);
+    setCredentialsFeedback(null);
+
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setCredentialsFeedback({ type: 'success', message: 'Password updated successfully!' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setCredentialsFeedback(null), 4000);
+    } catch (err: any) {
+      setCredentialsFeedback({ type: 'error', message: err.message || 'Failed to update password' });
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 10; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pwd);
+    setConfirmPassword(pwd);
+    setShowNewPass(true);
+    setShowConfirmPass(true);
   };
 
   if (loading) {
@@ -426,7 +536,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       onChange={(e: any) => setProfileVisibility(e.target.value)}
                       className="w-full bg-[#030712] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                     >
-                      <option value="public">Public (All Talksy)</option>
+                      <option value="public">Public (All ZappChat)</option>
                       <option value="friends">Friends Only</option>
                       <option value="private">Private (Only Me)</option>
                     </select>
@@ -542,7 +652,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#00D68F]/15 text-[#00D68F] border border-[#00D68F]/30 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00D68F] animate-pulse" />
-                    Talksy v2.4 E2EE
+                    ZappChat v2.4 E2EE
                   </span>
                 </div>
 
@@ -586,7 +696,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
 
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Protect your Talksy account and conversations with 2FA code verification.
+                    Protect your ZappChat account and conversations with 2FA code verification.
                   </p>
 
                   <button
@@ -615,6 +725,149 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Account Credentials Card (Change User ID & Password) */}
+              {isSelf && (
+                <div className="bg-[#111E2D] border border-[#1E3042] rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-emerald-400" />
+                      <h3 className="text-xs font-bold text-white">Account Credentials &amp; Security</h3>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      @{userProfile.id}
+                    </span>
+                  </div>
+
+                  {credentialsFeedback && (
+                    <div
+                      className={`p-3 rounded-2xl border text-xs flex items-center gap-2 ${
+                        credentialsFeedback.type === 'success'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                      }`}
+                    >
+                      {credentialsFeedback.type === 'success' ? (
+                        <Check className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{credentialsFeedback.message}</span>
+                    </div>
+                  )}
+
+                  {/* Change User ID */}
+                  <form onSubmit={handleChangeUserId} className="p-3.5 rounded-2xl bg-[#091122] border border-[#1E3042] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#E8F0FA] flex items-center gap-1.5">
+                        <AtSign className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Change User ID</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-mono">3–30 characters</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-mono text-xs font-bold">
+                          @
+                        </span>
+                        <input
+                          type="text"
+                          value={newUserId}
+                          onChange={(e) => setNewUserId(e.target.value.toLowerCase().trim())}
+                          placeholder="new_user_id"
+                          className="w-full pl-7 pr-3 py-1.5 bg-[#050811] border border-[#1E3042] rounded-xl text-xs font-mono text-white focus:outline-none focus:border-emerald-400"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={updatingUserId || !newUserId.trim() || newUserId.trim().toLowerCase() === userProfile.id}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-slate-950 font-bold text-xs transition-colors cursor-pointer shrink-0"
+                      >
+                        {updatingUserId ? 'Saving...' : 'Update ID'}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Change Password */}
+                  <form onSubmit={handleChangePassword} className="p-3.5 rounded-2xl bg-[#091122] border border-[#1E3042] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#E8F0FA] flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Change Password</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleGeneratePassword}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Generate</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type={showCurrentPass ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Current password"
+                          className="w-full pl-3 pr-9 py-1.5 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPass(!showCurrentPass)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                        >
+                          {showCurrentPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showNewPass ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="New password (min 5 chars)"
+                          className="w-full pl-3 pr-9 py-1.5 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPass(!showNewPass)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                        >
+                          {showNewPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showConfirmPass ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                          className="w-full pl-3 pr-9 py-1.5 bg-[#050811] border border-[#1E3042] rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPass(!showConfirmPass)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                        >
+                          {showConfirmPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={updatingPassword || !currentPassword || !newPassword}
+                      className="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-[#00D68F] hover:from-emerald-300 hover:to-[#00B87A] disabled:opacity-40 text-slate-950 font-bold text-xs transition-colors cursor-pointer shadow-sm"
+                    >
+                      {updatingPassword ? 'Updating Password...' : 'Save New Password'}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>

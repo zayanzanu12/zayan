@@ -2,26 +2,386 @@
   "users": [
     {
       "id": "zayan",
-      "displayName": "Zayan (Admin)",
+      "displayName": "Zanu (Admin)",
       "role": "admin",
-      "passwordHash": "41c42cdd3c034b1afd575db31ad69c4d342f27aea327eb0935033c017cef76ad70bcd586d1b7dce3b6992bea05d1297937703091714f9e719b54e3a7ba37697d",
-      "salt": "ac91ff8727affdb9e84402c96d2a5268",
+      "passwordHash": "eb04d7acf206b8ce74a6387b488b14d94fd3b0c22ca42ec66ee72c2aaff9b383376d1c66f230a677098cc10eb0e2fb4b342ac3dcba7c3e174f58b2c1998b56fb",
+      "salt": "561a8846bfdb57e60aece2c997c866b0",
       "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      "bio": "Creator & Administrator of Talksy ⚡",
+      "bio": "Creator & Administrator of ZappChat ⚡",
       "status": "Online & Building",
       "disabled": false,
       "online": true,
-      "lastSeen": "2026-10-14T12:20:00.000Z",
-      "createdAt": "2026-10-14T12:03:29.877Z"
+      "lastSeen": "2026-11-01T10:09:42.390Z",
+      "createdAt": "2026-10-14T12:03:29.877Z",
+      "coverUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80",
+      "interests": [
+        "Tech",
+        "Design",
+        "WebRTC",
+        "Security"
+      ],
+      "privacySettings": {
+        "profileVisibility": "public",
+        "allowMessagesFrom": "everyone",
+        "showOnlineStatus": true
+      },
+      "following": [
+        "zayam"
+      ],
+      "username": "zanu"
+    },
+    {
+      "id": "zayam",
+      "displayName": "zayam",
+      "role": "friend",
+      "passwordHash": "cea27d427788e3e573e60f8a30791fb46df688bcc6f21e2a1651361508c644d6b143386cbc283f0ec2614dd49c6b3099d6057f3d74e266b7ec0b3f30aedf642d",
+      "salt": "add0ea54c985fbc5b3c4427e39dbb648",
+      "avatarUrl": "https://api.dicebear.com/7.x/bottts/svg?seed=zayam",
+      "bio": "Hey there! I am using Zayan Chat.",
+      "status": "Available",
+      "disabled": false,
+      "online": true,
+      "lastSeen": "2026-11-01T09:34:56.790Z",
+      "createdAt": "2026-10-17T11:57:14.725Z",
+      "following": [
+        "zayan"
+      ],
+      "username": "zayam"
     }
   ],
-  "messages": [],
+  "messages": [
+    {
+      "id": "msg_1792238247170_15b84af5",
+      "senderId": "zayan",
+      "receiverId": "zayam",
+      "text": "hi",
+      "reactions": [],
+      "status": "read",
+      "createdAt": "2026-10-17T11:57:27.170Z"
+    },
+    {
+      "id": "msg_1792238326862_cb232434",
+      "senderId": "zayam",
+      "receiverId": "zayan",
+      "text": "hello",
+      "reactions": [],
+      "status": "read",
+      "createdAt": "2026-10-17T11:58:46.862Z"
+    }
+  ],
   "sessions": [
     {
       "token": "fa9f5ad31236b6827357854b0c04aa449c15583a67da67575486706e3a816af0",
       "userId": "zayan",
       "expiresAt": 1794571409933
+    },
+    {
+      "id": "dev_1792238319257_de0a0d",
+      "token": "6c1395594ae0a81eea9638c903a783b8a227350c2714bedaeff7160e57ab5f6a",
+      "userId": "zayam",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "103.215.54.94",
+      "location": "Active Session",
+      "createdAt": "2026-10-17T11:58:39.258Z",
+      "lastActive": "2026-10-17T11:58:39.258Z",
+      "expiresAt": 1794830319257
+    },
+    {
+      "id": "dev_1792411878638_42c42f",
+      "token": "c41b223036ac39c88c77ae13193660c96044c619e792539b68b82753b8081a69",
+      "userId": "zayan",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "103.215.53.54",
+      "location": "Active Session",
+      "createdAt": "2026-10-19T12:11:18.639Z",
+      "lastActive": "2026-10-19T12:11:18.639Z",
+      "expiresAt": 1795003878638
+    },
+    {
+      "id": "dev_1792413073965_b280bc",
+      "token": "bf96370f15423382c16a2206e18e07be2838678972d5fda5ea53554ef43eedf1",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-19T12:31:13.965Z",
+      "lastActive": "2026-10-19T12:31:13.965Z",
+      "expiresAt": 1795005073965
+    },
+    {
+      "id": "dev_1792413081514_59f90b",
+      "token": "caea930473e6f38932683068cc95aca587dd8c6039d2fc8674acb6a12d8a6ca8",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-19T12:31:21.514Z",
+      "lastActive": "2026-10-19T12:31:21.514Z",
+      "expiresAt": 1795005081514
+    },
+    {
+      "id": "dev_1792488971941_f6c339",
+      "token": "3dda9e63fb16b3005aebd7a68eb48010d40cc3a283a626876ab4fa7d15b9f477",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-20T09:36:11.942Z",
+      "lastActive": "2026-10-20T09:36:11.942Z",
+      "expiresAt": 1795080971941
+    },
+    {
+      "id": "dev_1792489120158_35edc6",
+      "token": "063f5a7ae0b69e7a3fa5ce82ba76258bb1425eae2c7843bfbc4c22be73250661",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-20T09:38:40.158Z",
+      "lastActive": "2026-10-20T09:38:40.158Z",
+      "expiresAt": 1795081120158
+    },
+    {
+      "id": "dev_1792489120244_b69275",
+      "token": "e6b944c2c8998023a1e81592dbe1751180d6ac2153d3add2a293b0e89b15253f",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-20T09:38:40.244Z",
+      "lastActive": "2026-10-20T09:38:40.244Z",
+      "expiresAt": 1795081120244
+    },
+    {
+      "id": "dev_1792581864898_048b6d",
+      "token": "fad8c22ef8a745c2377980c46506689de5dc85f0c734ff6bc0588269bd53fe10",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-21T11:24:24.899Z",
+      "lastActive": "2026-10-21T11:24:24.899Z",
+      "expiresAt": 1795173864899
+    },
+    {
+      "id": "dev_1792581872961_0e48ee",
+      "token": "a461de9dfd44a0f90946282904882f4978a50cc2864e5a2820abb5b28e7ddbd1",
+      "userId": "zayan",
+      "deviceName": "Chrome on Web",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Web",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-10-21T11:24:32.961Z",
+      "lastActive": "2026-10-21T11:24:32.961Z",
+      "expiresAt": 1795173872961
+    },
+    {
+      "id": "dev_1793525046983_e75c26",
+      "token": "0bbc09825c641584d8784aebd7bdc9873b680578235f8aabfca3c4bf8267189c",
+      "userId": "zayam",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-11-01T09:24:06.983Z",
+      "lastActive": "2026-11-01T09:24:06.983Z",
+      "expiresAt": 1796117046983
+    },
+    {
+      "id": "dev_1793525696789_ab3cd8",
+      "token": "ff6c4ce48559314ee3ffe84edccf5b016adbc9b076b552d7721567687b5a4585",
+      "userId": "zayam",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-11-01T09:34:56.790Z",
+      "lastActive": "2026-11-01T09:34:56.790Z",
+      "expiresAt": 1796117696789
+    },
+    {
+      "id": "dev_1793527776670_84b2a5",
+      "token": "c2b6e3526f07a6aca5e23fb1ff7eff5193b017fb1b239f63ae40ccd9b17dcdc6",
+      "userId": "zayan",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-11-01T10:09:36.670Z",
+      "lastActive": "2026-11-01T10:09:36.670Z",
+      "expiresAt": 1796119776670
+    },
+    {
+      "id": "dev_1793527782390_7fc894",
+      "token": "f5896e8d56fd27f3b75840f8ddbe1a0127c63500b75bcc960a141179efef1f0b",
+      "userId": "zayan",
+      "deviceName": "Windows • Chrome",
+      "deviceType": "desktop",
+      "browser": "Chrome",
+      "os": "Windows",
+      "ip": "127.0.0.1",
+      "location": "Active Session",
+      "createdAt": "2026-11-01T10:09:42.390Z",
+      "lastActive": "2026-11-01T10:09:42.390Z",
+      "expiresAt": 1796119782390
     }
   ],
-  "reports": []
+  "reports": [],
+  "posts": [
+    {
+      "id": "post_init_1",
+      "authorId": "zayan",
+      "authorName": "Zayan (Admin)",
+      "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "authorRole": "admin",
+      "text": "Welcome to the all-new ZappChat! ✨ We have combined instant peer messaging with rich social profiles, 24-hour stories, community groups, and private safety controls. Share your first post or story!",
+      "mediaUrl": "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80",
+      "mediaType": "image",
+      "tags": [
+        "announcements",
+        "community",
+        "update"
+      ],
+      "likes": [
+        "zayan"
+      ],
+      "comments": [
+        {
+          "id": "c_1",
+          "postId": "post_init_1",
+          "authorId": "zayan",
+          "authorName": "Zayan (Admin)",
+          "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          "text": "Feel free to leave comments or create your own group in the Groups tab!",
+          "createdAt": "2026-10-17T10:24:58.215Z"
+        }
+      ],
+      "sharesCount": 3,
+      "savedBy": [],
+      "createdAt": "2026-10-17T09:24:58.215Z"
+    },
+    {
+      "id": "post_init_2",
+      "authorId": "zayan",
+      "authorName": "Zayan (Admin)",
+      "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "authorRole": "admin",
+      "text": "Pro-tip: Try clicking on any profile avatar to view their cover banner, personal interests, mutual friends, and activity timeline. 🛡️",
+      "tags": [
+        "tips",
+        "profiles",
+        "privacy"
+      ],
+      "likes": [],
+      "comments": [],
+      "sharesCount": 1,
+      "savedBy": [],
+      "createdAt": "2026-10-17T10:24:58.215Z"
+    }
+  ],
+  "stories": [
+    {
+      "id": "story_zayan_1",
+      "authorId": "zayan",
+      "authorName": "Zayan (Admin)",
+      "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "mediaUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+      "text": "Building the future of social messaging 🚀",
+      "bgColor": "#0f172a",
+      "viewers": [],
+      "createdAt": "2026-10-17T11:24:58.215Z",
+      "expiresAt": "2026-10-18T11:24:58.215Z"
+    }
+  ],
+  "groups": [],
+  "friendRequests": [
+    {
+      "id": "freq_1792238288283_1b44ba",
+      "fromUserId": "zayan",
+      "toUserId": "zayam",
+      "status": "accepted",
+      "createdAt": "2026-10-17T11:58:08.283Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1792238383881_d7eadd",
+      "userId": "zayan",
+      "actorId": "zayam",
+      "actorName": "zayam",
+      "actorAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=zayam",
+      "type": "friend_accepted",
+      "title": "Friend Request Accepted",
+      "body": "zayam accepted your friend request",
+      "read": false,
+      "createdAt": "2026-10-17T11:59:43.881Z"
+    },
+    {
+      "id": "notif_1792238288283_7679fa",
+      "userId": "zayam",
+      "actorId": "zayan",
+      "actorName": "Zayan (Admin)",
+      "actorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "type": "friend_request",
+      "title": "New Friend Request",
+      "body": "Zayan (Admin) sent you a friend request",
+      "targetId": "freq_1792238288283_1b44ba",
+      "read": false,
+      "createdAt": "2026-10-17T11:58:08.283Z"
+    }
+  ],
+  "inviteCodes": [
+    {
+      "code": "TALKSY-VIP-2026",
+      "createdBy": "zayan",
+      "createdAt": "2026-10-17T11:24:58.215Z"
+    },
+    {
+      "code": "COMMUNITY-7890",
+      "createdBy": "zayan",
+      "createdAt": "2026-10-17T11:24:58.215Z"
+    },
+    {
+      "code": "EXPLORE-4242",
+      "createdBy": "zayan",
+      "createdAt": "2026-10-17T11:24:58.215Z"
+    }
+  ],
+  "bookmarks": [],
+  "reminders": [],
+  "pinnedMessages": [],
+  "groupAuditLogs": [],
+  "workspaceLayouts": []
 }

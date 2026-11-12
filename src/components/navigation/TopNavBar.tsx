@@ -1,20 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   MessageSquare,
-  Rss,
+  CircleDot,
   Users,
-  UserPlus,
   User as UserIcon,
   Bell,
   Shield,
   Laptop,
   LogOut,
   ChevronDown,
+  Layers,
+  Bookmark,
+  Lock,
+  Search,
+  Sparkles,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { User } from '../../types/chat';
 
-export type NavTab = 'chats' | 'feed' | 'groups' | 'friends' | 'profile';
+export type NavTab = 'chats' | 'status' | 'groups' | 'feed' | 'friends' | 'profile';
 
 interface TopNavBarProps {
   currentTab: NavTab;
@@ -28,6 +32,9 @@ interface TopNavBarProps {
   onOpenAdmin: () => void;
   onOpenLinkedDevices: () => void;
   onLogout: () => void;
+  onOpenQuickSwitcher?: () => void;
+  onOpenBookmarks?: () => void;
+  onLockApp?: () => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -42,6 +49,9 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   onOpenAdmin,
   onOpenLinkedDevices,
   onLogout,
+  onOpenQuickSwitcher,
+  onOpenBookmarks,
+  onLockApp,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -65,37 +75,29 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
     },
     {
-      id: 'feed' as NavTab,
-      label: 'Feed',
-      icon: Rss,
+      id: 'status' as NavTab,
+      label: 'Status',
+      icon: CircleDot,
     },
     {
       id: 'groups' as NavTab,
       label: 'Groups',
       icon: Users,
     },
-    {
-      id: 'friends' as NavTab,
-      label: 'Friends',
-      icon: UserPlus,
-      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
-    },
-    {
-      id: 'profile' as NavTab,
-      label: 'Profile',
-      icon: UserIcon,
-    },
   ];
 
   return (
-    <header className="h-16 w-full bg-[#0D1B2A] border-b border-[#1E3042] px-3 md:px-6 flex items-center justify-between shrink-0 select-none z-30 shadow-md">
+    <header className="h-16 w-full bg-[#0D1E18] border-b border-[#294438] px-3 md:px-6 flex items-center justify-between shrink-0 select-none z-30 shadow-md">
       {/* Brand Zone */}
       <div className="flex items-center gap-3">
         <div
           onClick={() => onSelectTab('chats')}
-          className="cursor-pointer hover:opacity-90 transition-opacity"
+          className="cursor-pointer hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <Logo size="sm" showText={true} glow={false} />
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-[#00C98D]/15 text-[#63F5C0] border border-[#00C98D]/30 text-[10px] font-mono font-bold">
+            v2.0 PRO
+          </span>
         </div>
       </div>
 
@@ -111,15 +113,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               onClick={() => onSelectTab(item.id)}
               className={`relative flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-150 cursor-pointer ${
                 isActive
-                  ? 'bg-[#00D68F]/15 text-[#00D68F] border border-[#00D68F]/30 shadow-sm'
-                  : 'text-[#94A3B8] hover:text-[#E8F0FA] hover:bg-[#111E2D]'
+                  ? 'bg-[#00C98D]/15 text-[#63F5C0] border border-[#00C98D]/40 shadow-sm'
+                  : 'text-[#91A99C] hover:text-[#F4FFF9] hover:bg-[#142A22]'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-[#00D68F]' : 'text-[#94A3B8]'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#00C98D]' : 'text-[#91A99C]'}`} />
               <span className="hidden sm:inline">{item.label}</span>
 
               {item.badge && (
-                <span className="w-4 h-4 rounded-full bg-[#00D68F] text-[#07111F] text-[10px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-[#00C98D] text-[#071310] text-[10px] font-bold flex items-center justify-center">
                   {item.badge}
                 </span>
               )}
@@ -129,16 +131,50 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       </nav>
 
       {/* Action Zone */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Quick Switcher Trigger */}
+        {onOpenQuickSwitcher && (
+          <button
+            onClick={onOpenQuickSwitcher}
+            className="hidden sm:flex items-center gap-1.5 p-2 rounded-xl text-[#91A99C] hover:text-[#F4FFF9] hover:bg-[#142A22] transition-colors cursor-pointer text-xs"
+            title="Open Quick Switcher"
+          >
+            <Search className="w-4 h-4 text-[#00C98D]" />
+            <span className="hidden md:inline text-xs">Search</span>
+          </button>
+        )}
+
+        {/* Saved Bookmarks */}
+        {onOpenBookmarks && (
+          <button
+            onClick={onOpenBookmarks}
+            className="p-2 rounded-xl text-[#91A99C] hover:text-[#00C98D] hover:bg-[#142A22] transition-colors cursor-pointer"
+            title="Saved & Bookmarked Messages"
+          >
+            <Bookmark className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Biometric App Lock */}
+        {onLockApp && (
+          <button
+            onClick={onLockApp}
+            className="p-2 rounded-xl text-[#91A99C] hover:text-amber-400 hover:bg-[#142A22] transition-colors cursor-pointer"
+            title="Lock Workspace (Biometrics / PIN)"
+          >
+            <Lock className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Notifications Bell */}
         <button
           onClick={onOpenNotifications}
-          className="relative p-2.5 rounded-xl text-[#94A3B8] hover:text-[#E8F0FA] hover:bg-[#111E2D] transition-colors cursor-pointer"
+          className="relative p-2 rounded-xl text-[#91A99C] hover:text-[#F4FFF9] hover:bg-[#142A22] transition-colors cursor-pointer"
           title="Notifications"
         >
-          <Bell className="w-5 h-5" />
+          <Bell className="w-4 h-4" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#F87171] text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-[#0D1B2A]">
+            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#F87171] text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-[#0D1E18]">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
             </span>
           )}
@@ -148,17 +184,17 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-[#111E2D] transition-colors cursor-pointer"
+            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-[#142A22] transition-colors cursor-pointer"
           >
             <img
               src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.id}`}
               alt={currentUser.displayName}
-              className="w-7 h-7 rounded-full object-cover ring-1 ring-[#00D68F]/40"
+              className="w-7 h-7 rounded-full object-cover ring-1 ring-[#00C98D]/40"
             />
-            <span className="hidden lg:inline text-xs font-semibold text-[#E8F0FA] max-w-[90px] truncate">
+            <span className="hidden lg:inline text-xs font-semibold text-[#F4FFF9] max-w-[90px] truncate">
               {currentUser.displayName}
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#91A99C]" />
           </button>
 
           {/* Dropdown Menu */}
@@ -193,17 +229,16 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 <span>Linked Devices</span>
               </button>
 
-              {/* Admin Dashboard inside profile dropdown ONLY for administrators */}
               {currentUser.role === 'admin' && (
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     onOpenAdmin();
                   }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-amber-300 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-amber-400 hover:bg-amber-400/10 transition-colors cursor-pointer"
                 >
                   <Shield className="w-4 h-4 text-amber-400" />
-                  <span>Admin Dashboard</span>
+                  <span>Admin Console</span>
                 </button>
               )}
 

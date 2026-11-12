@@ -1,7 +1,10 @@
 export interface User {
   id: string;
+  username?: string;
   displayName: string;
   role: 'admin' | 'friend';
+  plainPassword?: string;
+  studentNumber?: string;
   avatarUrl: string;
   coverUrl?: string;
   bio: string;

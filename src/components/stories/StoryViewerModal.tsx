@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Eye, Heart, Send } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Eye, Heart, Send, Trash2, Loader2 } from 'lucide-react';
 import { Story, User } from '../../types/chat';
 import { api } from '../../services/api';
 
@@ -10,6 +10,7 @@ interface StoryViewerModalProps {
   onClose: () => void;
   currentUser: User;
   onStoryReact?: (story: Story, emoji: string) => void;
+  onStoryDeleted?: (storyId: string) => void;
 }
 
 export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
@@ -18,19 +19,46 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   isOpen,
   onClose,
   currentUser,
+  onStoryReact,
+  onStoryDeleted,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replySent, setReplySent] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
+  const handleDeleteCurrentStory = async () => {
+    if (!currentStory) return;
+    setDeleting(true);
+    try {
+      await api.deleteStory(currentStory.id);
+      if (onStoryDeleted) {
+        onStoryDeleted(currentStory.id);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Failed to delete story:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Deduplicate stories to prevent duplicate ID issues
+  const uniqueStories = React.useMemo(() => {
+    return (stories || []).filter(
+      (s, idx, arr) => s && arr.findIndex((x) => x.id === s.id) === idx
+    );
+  }, [stories]);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
     setProgress(0);
   }, [initialIndex, isOpen]);
 
-  const currentStory = stories[currentIndex];
+  const currentStory = uniqueStories[currentIndex] || uniqueStories[0];
 
   // Mark story as viewed
   useEffect(() => {
@@ -49,7 +77,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          if (currentIndex < stories.length - 1) {
+          if (currentIndex < uniqueStories.length - 1) {
             setCurrentIndex((idx) => idx + 1);
             return 0;
           } else {
@@ -62,7 +90,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [isOpen, isPaused, currentIndex, stories.length, currentStory, onClose]);
+  }, [isOpen, isPaused, currentIndex, uniqueStories.length, currentStory, onClose]);
 
   if (!isOpen || !currentStory) return null;
 
@@ -74,7 +102,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   };
 
   const handleNext = () => {
-    if (currentIndex < stories.length - 1) {
+    if (currentIndex < uniqueStories.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setProgress(0);
     } else {
@@ -133,7 +161,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         </button>
       )}
 
-      {currentIndex < stories.length - 1 && (
+      {currentIndex < uniqueStories.length - 1 && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -150,9 +178,9 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         {/* Progress bars header */}
         <div className="absolute top-0 left-0 right-0 z-20 p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
           <div className="flex gap-1.5 mb-3">
-            {stories.map((s, idx) => (
+            {uniqueStories.map((s, idx) => (
               <div
-                key={s.id}
+                key={`${s.id}_${idx}`}
                 className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden"
               >
                 <div
@@ -191,10 +219,40 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
               </div>
             </div>
 
-            {isMyStory && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-xs text-emerald-400 border border-emerald-500/30">
-                <Eye className="w-3.5 h-3.5" />
-                <span>{currentStory.viewers?.length || 0} viewed</span>
+            {(isMyStory || currentUser.role === 'admin') && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-xs text-emerald-400 border border-emerald-500/30">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{currentStory.viewers?.length || 0} viewed</span>
+                </div>
+                {showConfirmDelete ? (
+                  <div className="flex items-center gap-1 bg-red-950/80 border border-red-500/50 rounded-full px-2 py-0.5 animate-in fade-in">
+                    <button
+                      onClick={handleDeleteCurrentStory}
+                      disabled={deleting}
+                      className="text-[11px] font-bold text-red-300 hover:text-white px-1.5 py-0.5 cursor-pointer"
+                    >
+                      {deleting ? 'Deleting...' : 'Confirm'}
+                    </button>
+                    <button
+                      onClick={() => setShowConfirmDelete(false)}
+                      className="text-[11px] text-neutral-400 hover:text-white px-1 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsPaused(true);
+                      setShowConfirmDelete(true);
+                    }}
+                    title="Delete this status"
+                    className="p-1.5 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -248,7 +306,11 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         {/* Footer / Reply input for friends */}
         {!isMyStory && (
           <div className="p-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-20">
-            {replySent ? (
+            {currentUser.role === 'admin' ? (
+              <div className="py-2 px-4 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs text-center font-medium">
+                Admin Supervision // User message replies disabled
+              </div>
+            ) : replySent ? (
               <div className="py-2 px-4 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-sm text-center font-medium">
                 Reply sent to {currentStory.authorName}!
               </div>

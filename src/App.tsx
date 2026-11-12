@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
+import { AdminLoginPage } from './components/auth/AdminLoginPage';
 import { Sidebar } from './components/chat/Sidebar';
 import { ChatArea } from './components/chat/ChatArea';
 import { UserProfileModal } from './components/chat/UserProfileModal';
@@ -9,12 +10,19 @@ import { CallOverlay, CallSession } from './components/chat/CallOverlay';
 import { TopNavBar, NavTab } from './components/navigation/TopNavBar';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { SocialFeedView } from './components/feed/SocialFeedView';
+import { StatusView } from './components/status/StatusView';
 import { GroupsView } from './components/groups/GroupsView';
 import { FriendsView } from './components/friends/FriendsView';
 import { ProfileView } from './components/profile/ProfileView';
+import { QuickSwitcherModal } from './components/spatial/QuickSwitcherModal';
+import { BiometricLockModal } from './components/spatial/BiometricLockModal';
+import { BookmarksDrawer } from './components/spatial/BookmarksDrawer';
+import { FilePreviewModal } from './components/spatial/FilePreviewModal';
+import { AiTopicsModal } from './components/spatial/AiTopicsModal';
+import { MediaCollectionModal } from './components/spatial/MediaCollectionModal';
 import { User, FriendContact, NotificationItem } from './types/chat';
 import { api, getStoredToken } from './services/api';
-import { Shield, UserPlus, MessageSquare, Users } from 'lucide-react';
+import { Shield, UserPlus, MessageSquare, Users, Laptop } from 'lucide-react';
 import { Logo } from './components/common/Logo';
 
 export default function App() {
@@ -22,6 +30,7 @@ export default function App() {
   const [friends, setFriends] = useState<FriendContact[]>([]);
   const [activeFriendId, setActiveFriendId] = useState<string | null>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   // Active top navigation tab
   const [activeTab, setActiveTab] = useState<NavTab>('chats');
@@ -32,6 +41,27 @@ export default function App() {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [showLinkedDevicesModal, setShowLinkedDevicesModal] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+
+  // ZappChat 2.0 Spatial & Productivity Modals
+  const [isAppLocked, setIsAppLocked] = useState(false);
+  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const [showBookmarksDrawer, setShowBookmarksDrawer] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{
+    url: string;
+    name: string;
+    type?: string;
+    size?: number;
+  } | null>(null);
+  const [aiTopicsModal, setAiTopicsModal] = useState<{
+    isOpen: boolean;
+    friendId?: string;
+    friendName?: string;
+  }>({ isOpen: false });
+  const [mediaCollectionModal, setMediaCollectionModal] = useState<{
+    isOpen: boolean;
+    conversationId?: string;
+    title?: string;
+  }>({ isOpen: false });
 
   // Notifications & Friend Requests State
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -108,6 +138,68 @@ export default function App() {
       loadNotificationsAndRequests();
     }
   }, [currentUser, loadFriends, loadNotificationsAndRequests]);
+
+  // Keyboard Shortcut: ONLY Tab + W to open Admin Portal / Admin Login
+  useEffect(() => {
+    let isTabDown = false;
+    let lastTabTimestamp = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        isTabDown = true;
+        lastTabTimestamp = Date.now();
+      }
+
+      const isW = e.key === 'w' || e.key === 'W';
+
+      // Requested shortcut: Tab + W (holding Tab and pressing W, or pressing W right after Tab)
+      const isTabPlusW = isW && (isTabDown || (Date.now() - lastTabTimestamp < 800));
+
+      if (isTabPlusW) {
+        // Prevent default browser tab focus jumping or character insertion
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (currentUser?.role === 'admin') {
+          setShowAdminDashboard((prev) => !prev);
+        } else {
+          // Open separate private Admin Login Page
+          setShowAdminLogin((prev) => !prev);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        isTabDown = false;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
+    };
+  }, [currentUser]);
+
+  // Secret URL hash or search support (e.g. #admin or ?admin=true) for discreet admin access
+  useEffect(() => {
+    const checkAdminUrl = () => {
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (hash.includes('admin') || search.includes('admin')) {
+        if (currentUser?.role === 'admin') {
+          setShowAdminDashboard(true);
+        } else {
+          setShowAdminLogin(true);
+        }
+      }
+    };
+    checkAdminUrl();
+    window.addEventListener('hashchange', checkAdminUrl);
+    return () => window.removeEventListener('hashchange', checkAdminUrl);
+  }, [currentUser]);
 
   // Presence heartbeat
   useEffect(() => {
@@ -363,7 +455,7 @@ export default function App() {
         <div className="flex flex-col items-center gap-4">
           <Logo size="lg" showText={false} glow={true} />
           <span className="text-xs font-semibold tracking-wider uppercase text-slate-400 animate-pulse">
-            Loading Talksy...
+            Loading ZappChat...
           </span>
         </div>
       </div>
@@ -372,7 +464,23 @@ export default function App() {
 
   // If not logged in, render the login page
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <LoginPage
+          onLoginSuccess={handleLoginSuccess}
+          onOpenAdminLogin={() => setShowAdminLogin(true)}
+        />
+        <AdminLoginPage
+          isOpen={showAdminLogin}
+          onClose={() => setShowAdminLogin(false)}
+          onAdminLoginSuccess={(adminUser) => {
+            handleLoginSuccess(adminUser);
+            setShowAdminLogin(false);
+            setShowAdminDashboard(true);
+          }}
+        />
+      </>
+    );
   }
 
   const activeFriend = friends.find((f) => f.id === activeFriendId);
@@ -398,10 +506,14 @@ export default function App() {
         onOpenAdmin={() => setShowAdminDashboard(true)}
         onOpenLinkedDevices={() => setShowLinkedDevicesModal(true)}
         onLogout={handleLogout}
+        onOpenQuickSwitcher={() => setShowQuickSwitcher(true)}
+        onOpenBookmarks={() => setShowBookmarksDrawer(true)}
+        onLockApp={() => setIsAppLocked(true)}
       />
 
       {/* Main View Router */}
       <main className="flex-1 w-full overflow-hidden flex relative">
+
         {/* VIEW 1: Chats (1:1 and Direct Messaging) */}
         {activeTab === 'chats' && (
           <div className="h-full w-full flex overflow-hidden">
@@ -437,6 +549,13 @@ export default function App() {
                   isTyping={Boolean(typingUsers[activeFriend.id])}
                   onStartVoiceCall={() => handleStartCall(activeFriend, 'voice')}
                   onStartVideoCall={() => handleStartCall(activeFriend, 'video')}
+                  onOpenAiTopics={(friendId, friendName) =>
+                    setAiTopicsModal({ isOpen: true, friendId, friendName })
+                  }
+                  onOpenMediaCollection={(convId, title) =>
+                    setMediaCollectionModal({ isOpen: true, conversationId: convId, title })
+                  }
+                  onOpenFilePreview={(file) => setPreviewFile(file)}
                 />
               ) : (
                 /* Compact, Elegant Welcome Screen */
@@ -450,7 +569,7 @@ export default function App() {
                   </div>
 
                   <h2 className="text-2xl font-bold text-[#E8F0FA] tracking-tight relative z-10 mb-1.5">
-                    Welcome to Talksy
+                    Welcome to ZappChat
                   </h2>
                   <p className="text-xs text-[#94A3B8] max-w-sm leading-relaxed relative z-10 mb-6">
                     Connect privately with end-to-end encryption. Start a conversation or select a chat from the sidebar.
@@ -472,28 +591,20 @@ export default function App() {
                     <span>Start a conversation</span>
                   </button>
 
-                  {/* Helpful Quick Links: Friends, Groups, Settings */}
+                  {/* Helpful Quick Links: Linked Devices & Privacy */}
                   <div className="flex items-center gap-2 relative z-10 text-xs">
                     <button
                       type="button"
-                      onClick={() => setActiveTab('friends')}
-                      className="px-3 py-1.5 rounded-xl bg-[#111E2D] hover:bg-[#1E3042] border border-[#1E3042] text-[#E8F0FA] transition-colors flex items-center gap-1.5 cursor-pointer"
+                      onClick={() => setShowLinkedDevicesModal(true)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#111E2D] hover:bg-[#1E3042] border border-[#1E3042] text-[#E8F0FA] transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <UserPlus className="w-3.5 h-3.5 text-[#00D68F]" />
-                      <span>Friends</span>
+                      <Laptop className="w-3.5 h-3.5 text-[#00D68F]" />
+                      <span>Linked Devices</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveTab('groups')}
-                      className="px-3 py-1.5 rounded-xl bg-[#111E2D] hover:bg-[#1E3042] border border-[#1E3042] text-[#E8F0FA] transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Users className="w-3.5 h-3.5 text-[#00D68F]" />
-                      <span>Groups</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('profile')}
-                      className="px-3 py-1.5 rounded-xl bg-[#111E2D] hover:bg-[#1E3042] border border-[#1E3042] text-[#E8F0FA] transition-colors flex items-center gap-1.5 cursor-pointer"
+                      onClick={handleOpenMyProfile}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#111E2D] hover:bg-[#1E3042] border border-[#1E3042] text-[#E8F0FA] transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Shield className="w-3.5 h-3.5 text-[#00D68F]" />
                       <span>Privacy &amp; Security</span>
@@ -503,6 +614,11 @@ export default function App() {
               )}
             </div>
           </div>
+        )}
+
+        {/* VIEW: WhatsApp-Style Status Updates */}
+        {activeTab === 'status' && (
+          <StatusView currentUser={currentUser} />
         )}
 
         {/* VIEW 2: Social Feed & Stories */}
@@ -542,11 +658,12 @@ export default function App() {
             currentUser={currentUser}
             inspectedUserId={inspectUser?.id || currentUser.id}
             onUserUpdated={(updated) => {
-              if (updated.id === currentUser.id) {
+              const prevId = inspectUser?.id || currentUser.id;
+              if (prevId === currentUser.id || updated.id === currentUser.id) {
                 setCurrentUser(updated);
               }
               setFriends((prev) =>
-                prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f))
+                prev.map((f) => (f.id === prevId || f.id === updated.id ? { ...f, ...updated } : f))
               );
             }}
             onOpenLinkedDevices={() => setShowLinkedDevicesModal(true)}
@@ -601,11 +718,12 @@ export default function App() {
           currentUser={currentUser}
           onOpenLinkedDevices={() => setShowLinkedDevicesModal(true)}
           onUserUpdated={(updated) => {
-            if (updated.id === currentUser.id) {
+            const prevId = inspectUser?.id || currentUser.id;
+            if (prevId === currentUser.id || updated.id === currentUser.id) {
               setCurrentUser(updated);
             }
             setFriends((prev) =>
-              prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f))
+              prev.map((f) => (f.id === prevId || f.id === updated.id ? { ...f, ...updated } : f))
             );
           }}
           onLogout={handleLogout}
@@ -631,6 +749,83 @@ export default function App() {
           currentUser={currentUser}
           onClose={() => setShowAdminDashboard(false)}
           onUsersModified={() => loadFriends()}
+        />
+      )}
+
+      {/* Admin Login Gateway Modal */}
+      <AdminLoginPage
+        isOpen={showAdminLogin}
+        onClose={() => setShowAdminLogin(false)}
+        onAdminLoginSuccess={(adminUser) => {
+          handleLoginSuccess(adminUser);
+          setShowAdminLogin(false);
+          setShowAdminDashboard(true);
+        }}
+      />
+
+      {/* Biometric App Lock Modal */}
+      <BiometricLockModal
+        isOpen={isAppLocked}
+        currentUser={currentUser}
+        onUnlock={() => setIsAppLocked(false)}
+      />
+
+      {/* Ctrl+K Quick Switcher Modal */}
+      <QuickSwitcherModal
+        isOpen={showQuickSwitcher}
+        onClose={() => setShowQuickSwitcher(false)}
+        friends={friends}
+        onSelectFriend={(id: string) => {
+          setActiveFriendId(id);
+          setActiveTab('chats');
+          setShowQuickSwitcher(false);
+        }}
+        onSelectTab={(tab: any) => {
+          setActiveTab(tab);
+          setShowQuickSwitcher(false);
+        }}
+        onOpenAi={() => {
+          setActiveFriendId('zapp_ai');
+          setActiveTab('chats');
+          setShowQuickSwitcher(false);
+        }}
+      />
+
+      {/* Starred Bookmarks Drawer */}
+      <BookmarksDrawer
+        isOpen={showBookmarksDrawer}
+        onClose={() => setShowBookmarksDrawer(false)}
+        onSelectMessage={() => {
+          setShowBookmarksDrawer(false);
+        }}
+      />
+
+      {/* File & Media Preview Workspace */}
+      <FilePreviewModal
+        file={previewFile}
+        onClose={() => setPreviewFile(null)}
+      />
+
+      {/* Zapp AI Topics & Summaries Modal */}
+      {aiTopicsModal.isOpen && (
+        <AiTopicsModal
+          isOpen={aiTopicsModal.isOpen}
+          onClose={() => setAiTopicsModal({ isOpen: false })}
+          friendId={aiTopicsModal.friendId}
+          friendName={aiTopicsModal.friendName}
+        />
+      )}
+
+      {/* Media, Files, Links Collection Modal */}
+      {mediaCollectionModal.isOpen && (
+        <MediaCollectionModal
+          isOpen={mediaCollectionModal.isOpen}
+          onClose={() => setMediaCollectionModal({ isOpen: false })}
+          conversationId={mediaCollectionModal.conversationId || 'global'}
+          title={mediaCollectionModal.title}
+          onPreviewFile={(file: any) =>
+            setPreviewFile(typeof file === 'string' ? { url: file, name: 'Attachment' } : file)
+          }
         />
       )}
     </div>

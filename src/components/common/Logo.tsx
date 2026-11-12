@@ -46,7 +46,7 @@ export const Logo: React.FC<LogoProps> = ({
           />
         )}
 
-        {/* Crisp High-Fidelity SVG of the exact Talksy Badge */}
+        {/* Crisp High-Fidelity SVG of the ZappChat Emblem */}
         <svg
           viewBox="0 0 200 200"
           className="w-full h-full relative z-10 drop-shadow-[0_0_18px_rgba(0,214,143,0.65)]"
@@ -56,7 +56,7 @@ export const Logo: React.FC<LogoProps> = ({
           <defs>
             {/* Soft Ambient Shadow Filter */}
             <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#00D68F" floodOpacity="0.4" />
+              <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#00D68F" floodOpacity="0.5" />
             </filter>
 
             {/* Neon Green Outer Ring Gradient */}
@@ -66,128 +66,92 @@ export const Logo: React.FC<LogoProps> = ({
               <stop offset="100%" stopColor="#00A86B" />
             </linearGradient>
 
-            {/* Dark Inner Glass Radial Gradient */}
-            <radialGradient id="darkGlass" cx="40%" cy="35%" r="65%">
-              <stop offset="0%" stopColor="#0b241c" />
-              <stop offset="60%" stopColor="#04120e" />
-              <stop offset="100%" stopColor="#010604" />
+            {/* Midnight Navy Inner Glass Radial Gradient */}
+            <radialGradient id="darkGlass" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#152B3C" />
+              <stop offset="55%" stopColor="#0D1E2D" />
+              <stop offset="100%" stopColor="#07111F" />
             </radialGradient>
+
+            {/* Lightning Bolt Gradient */}
+            <linearGradient id="lightningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="60%" stopColor="#E6FFF5" />
+              <stop offset="100%" stopColor="#00D68F" />
+            </linearGradient>
 
             {/* Top Gloss Reflection */}
             <linearGradient id="glassGloss" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#4EFEB3" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#4EFEB3" stopOpacity="0" />
+              <stop offset="0%" stopColor="#4EFEB3" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#00D68F" stopOpacity="0" />
             </linearGradient>
           </defs>
 
-          {/* Deep Black / Dark Green Ambient Outer Halo Disc */}
-          <circle cx="100" cy="100" r="92" fill="#010705" />
+          {/* Deep Black / Midnight Outer Halo Disc */}
+          <circle cx="100" cy="100" r="92" fill="#050C15" stroke="#1E3042" strokeWidth="2" />
 
           {/* Chat Bubble Outline with Tail at Bottom-Left */}
           <path
-            d="M 100 22 C 57 22 22 57 22 100 C 22 118 28 134 38 147 L 27 180 L 63 171 C 74 175 87 178 100 178 C 143 178 178 143 178 100 C 178 57 143 22 100 22 Z"
+            d="M 100 24 C 58 24 24 58 24 100 C 24 117 30 133 40 146 L 29 178 L 65 169 C 76 173 88 176 100 176 C 142 176 176 142 176 100 C 176 58 142 24 100 24 Z"
             fill="url(#neonGreenBorder)"
           />
 
           {/* Inner Dark Glass Disc */}
           <path
-            d="M 100 32 C 63 32 32 63 32 100 C 32 115 37 129 45 140 L 37 165 L 64 158 C 74 163 87 168 100 168 C 137 168 168 137 168 100 C 168 63 137 32 100 32 Z"
+            d="M 100 34 C 64 34 34 64 34 100 C 34 115 39 128 47 139 L 39 163 L 64 156 C 75 161 87 166 100 166 C 136 166 166 136 166 100 C 166 64 136 34 100 34 Z"
             fill="url(#darkGlass)"
           />
 
           {/* Top Glass Specular Arc Reflection */}
           <path
-            d="M 45 78 C 55 50 80 36 112 36 C 144 36 156 52 161 74 C 142 56 116 50 88 56 C 68 60 53 69 45 78 Z"
+            d="M 46 80 C 56 52 81 38 112 38 C 142 38 155 54 160 74 C 141 57 116 51 88 57 C 69 61 54 70 46 80 Z"
             fill="url(#glassGloss)"
           />
 
-          {/* Voice Waves & Phone Handset Group (Tilted -6 deg) */}
-          <g transform="translate(100, 92) rotate(-6) translate(-100, -92)">
-            {/* Sound Wave 1 (Inner) */}
+          {/* Sound / Signal Wave Arcs on top-right */}
+          <g opacity="0.95">
             <path
-              d="M 102 74 C 107 79 110 86 110 93 C 110 100 107 107 102 112"
+              d="M 124 64 C 132 72 137 83 137 95 C 137 107 132 118 124 126"
               stroke="#00D68F"
-              strokeWidth="5"
+              strokeWidth="4.5"
               strokeLinecap="round"
               fill="none"
+              filter="url(#softGlow)"
             />
-
-            {/* Sound Wave 2 (Middle) */}
             <path
-              d="M 112 65 C 120 73 125 84 125 95 C 125 106 120 117 112 125"
-              stroke="#00D68F"
-              strokeWidth="5.5"
-              strokeLinecap="round"
-              fill="none"
-            />
-
-            {/* Sound Wave 3 (Outer) */}
-            <path
-              d="M 123 56 C 134 67 141 81 141 96 C 141 111 134 125 123 136"
-              stroke="#00D68F"
-              strokeWidth="6"
-              strokeLinecap="round"
-              fill="none"
-            />
-
-            {/* Pure Crisp White Phone Handset */}
-            <path
-              d="M 94 72 C 92 68 87 66 82 68 L 72 73 C 67 75 64 80 66 85 C 72 98 84 118 104 127 C 109 129 114 127 117 122 L 123 113 C 125 109 124 103 119 101 L 107 94 C 103 92 98 94 95 98 L 92 101 C 86 96 80 89 77 82 L 81 79 C 85 76 87 71 85 67 Z"
-              fill="#ffffff"
-              filter="drop-shadow(0 2px 6px rgba(0,0,0,0.5))"
-            />
-          </g>
-
-          {/* Tilted 3D White Typography: "Talksy" overlapping the bottom */}
-          <g transform="translate(100, 150) rotate(-6) translate(-100, -150)">
-            {/* 3D Dark Green Shadow Contour */}
-            <text
-              x="100"
-              y="155"
-              textAnchor="middle"
-              fill="#011b13"
-              stroke="#011b13"
-              strokeWidth="10"
-              strokeLinejoin="round"
-              fontSize="48"
-              fontWeight="900"
-              fontFamily="'Plus Jakarta Sans', system-ui, sans-serif"
-              letterSpacing="-0.03em"
-            >
-              Talksy
-            </text>
-
-            {/* Vibrant Green Outline */}
-            <text
-              x="100"
-              y="152"
-              textAnchor="middle"
-              fill="#012b1e"
+              d="M 137 54 C 148 65 154 80 154 96 C 154 112 148 127 137 138"
               stroke="#00D68F"
               strokeWidth="4"
-              strokeLinejoin="round"
-              fontSize="48"
-              fontWeight="900"
-              fontFamily="'Plus Jakarta Sans', system-ui, sans-serif"
-              letterSpacing="-0.03em"
-            >
-              Talksy
-            </text>
-
-            {/* Crisp Pure White Foreground Text */}
-            <text
-              x="100"
-              y="150"
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize="48"
-              fontWeight="900"
-              fontFamily="'Plus Jakarta Sans', system-ui, sans-serif"
-              letterSpacing="-0.03em"
-            >
-              Talksy
-            </text>
+              strokeLinecap="round"
+              fill="none"
+              opacity="0.75"
+            />
           </g>
+
+          {/* Iconic Centerpiece: Dynamic "Zapp" Electric Lightning Bolt */}
+          <g filter="url(#softGlow)">
+            {/* Vibrant Outer Neon Glow Aura of Lightning */}
+            <path
+              d="M 105 48 L 72 102 L 95 102 L 83 150 L 126 94 L 102 94 Z"
+              fill="#00D68F"
+              opacity="0.5"
+              transform="scale(1.08) translate(-7, -7)"
+            />
+
+            {/* Pure Crisp White & Emerald Foreground Lightning Bolt */}
+            <path
+              d="M 105 50 L 73 103 L 96 103 L 84 150 L 127 95 L 103 95 Z"
+              fill="url(#lightningGrad)"
+              stroke="#FFFFFF"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Dynamic Connection Pulse Dot */}
+          <circle cx="68" cy="74" r="5" fill="#00D68F" filter="url(#softGlow)" />
+          <circle cx="68" cy="74" r="2.5" fill="#FFFFFF" />
         </svg>
       </div>
 
@@ -196,7 +160,7 @@ export const Logo: React.FC<LogoProps> = ({
         <div className={`flex flex-col ${isHorizontal ? 'text-left' : 'items-center mt-2.5 text-center'}`}>
           <div className="flex items-center gap-1.5 leading-none">
             <span className={`font-black tracking-tight text-[#E8F0FA] ${current.text}`}>
-              Talksy
+              ZappChat
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#00D68F] shrink-0" />
           </div>

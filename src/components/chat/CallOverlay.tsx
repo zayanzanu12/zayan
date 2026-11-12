@@ -54,10 +54,19 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
-
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const timerIntervalRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Lifecycle mount / unmount guard
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      cleanup();
+    };
+  }, []);
 
   // Sound effects
   useEffect(() => {
@@ -202,23 +211,52 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
         localVideoRef.current.srcObject = localStream;
       }
 
-      // Add tracks to peer connection
-      localStream.getTracks().forEach((track) => {
-        pc.addTrack(track, localStream!);
-      });
+      // Check if peer connection was closed or component unmounted while obtaining media
+      const isPcClosed = (p: RTCPeerConnection): boolean => {
+        return (p.signalingState as string) === 'closed' || p.connectionState === 'closed';
+      };
 
-      // If caller, create SDP Offer
-      if (!session.isIncoming) {
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: session.callType === 'video',
+      if (!isMountedRef.current || isPcClosed(pc) || peerConnectionRef.current !== pc) {
+        if (localStream) {
+          localStream.getTracks().forEach((track) => track.stop());
+        }
+        return pc;
+      }
+
+      // Add tracks safely to peer connection
+      if (!isPcClosed(pc)) {
+        localStream.getTracks().forEach((track) => {
+          try {
+            if (!isPcClosed(pc)) {
+              pc.addTrack(track, localStream!);
+            }
+          } catch (trackErr) {
+            console.warn('Track addition skipped (closed signaling state):', trackErr);
+          }
         });
-        await pc.setLocalDescription(offer);
-        await api.sendCallSignal(session.callId, session.peerUser.id, 'offer', offer);
+      }
+
+      // If caller, create SDP Offer safely
+      if (!session.isIncoming && !isPcClosed(pc) && isMountedRef.current) {
+        try {
+          const offer = await pc.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: session.callType === 'video',
+          });
+          if (!isPcClosed(pc) && isMountedRef.current) {
+            await pc.setLocalDescription(offer);
+            await api.sendCallSignal(session.callId, session.peerUser.id, 'offer', offer);
+          }
+        } catch (offerErr) {
+          if (!isPcClosed(pc) && isMountedRef.current) {
+            console.warn('Offer creation failed:', offerErr);
+          }
+        }
       }
 
       return pc;
     } catch (err: any) {
+      if (!isMountedRef.current) return;
       console.error('WebRTC initialization failed:', err);
       setErrorMsg('Microphone or Camera access failed. Please ensure permissions are granted.');
       setTimeout(() => handleTerminate(), 3000);
@@ -236,27 +274,42 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   useEffect(() => {
     if (!incomingSignal || !peerConnectionRef.current) return;
     const pc = peerConnectionRef.current;
+    const isPcClosed = (p: RTCPeerConnection): boolean => {
+      return (p.signalingState as string) === 'closed' || p.connectionState === 'closed';
+    };
+    if (isPcClosed(pc) || !isMountedRef.current) return;
 
     const handleSignal = async () => {
       try {
+        if (!isMountedRef.current || isPcClosed(pc)) return;
         if (incomingSignal.type === 'offer') {
-          await pc.setRemoteDescription(new RTCSessionDescription(incomingSignal.signalData));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await api.sendCallSignal(session.callId, session.peerUser.id, 'answer', answer);
+          if (!isPcClosed(pc)) {
+            await pc.setRemoteDescription(new RTCSessionDescription(incomingSignal.signalData));
+            if (!isPcClosed(pc) && isMountedRef.current) {
+              const answer = await pc.createAnswer();
+              if (!isPcClosed(pc) && isMountedRef.current) {
+                await pc.setLocalDescription(answer);
+                await api.sendCallSignal(session.callId, session.peerUser.id, 'answer', answer);
+              }
+            }
+          }
         } else if (incomingSignal.type === 'answer') {
-          if (pc.signalingState !== 'stable') {
+          if (pc.signalingState !== 'stable' && !isPcClosed(pc)) {
             await pc.setRemoteDescription(new RTCSessionDescription(incomingSignal.signalData));
           }
         } else if (incomingSignal.type === 'ice-candidate') {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(incomingSignal.signalData));
-          } catch (e) {
-            console.warn('ICE candidate addition failed:', e);
+          if (!isPcClosed(pc)) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(incomingSignal.signalData));
+            } catch (e) {
+              console.warn('ICE candidate addition failed:', e);
+            }
           }
         }
       } catch (err) {
-        console.error('Signaling processing error:', err);
+        if (pc.signalingState !== 'closed' && isMountedRef.current) {
+          console.error('Signaling processing error:', err);
+        }
       }
     };
 

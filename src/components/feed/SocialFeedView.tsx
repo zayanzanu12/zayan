@@ -59,8 +59,11 @@ export const SocialFeedView: React.FC<SocialFeedViewProps> = ({
         }),
         api.getStories(),
       ]);
-      setPosts(fetchedPosts);
-      setStories(fetchedStories);
+      setPosts(fetchedPosts || []);
+      const uniqueStories = (fetchedStories || []).filter(
+        (s: Story, idx: number, arr: Story[]) => s && arr.findIndex((x) => x.id === s.id) === idx
+      );
+      setStories(uniqueStories);
     } catch (err) {
       console.error('Failed to load feed data:', err);
     } finally {
@@ -76,17 +79,24 @@ export const SocialFeedView: React.FC<SocialFeedViewProps> = ({
   useEffect(() => {
     const handleSsePost = (e: any) => {
       try {
-        const data = JSON.parse(e.data);
+        const data = e.detail || (e.data ? (typeof e.data === 'string' ? JSON.parse(e.data) : e.data) : null);
+        if (!data) return;
         if (data.type === 'new_post') {
-          setPosts((prev) => [data.payload, ...prev]);
+          setPosts((prev) => {
+            const filtered = prev.filter((p) => p.id !== data.payload.id);
+            return [data.payload, ...filtered];
+          });
         } else if (data.type === 'post_updated') {
           setPosts((prev) =>
             prev.map((p) => (p.id === data.payload.id ? data.payload : p))
           );
         } else if (data.type === 'post_deleted') {
           setPosts((prev) => prev.filter((p) => p.id !== data.payload.postId));
-        } else if (data.type === 'new_story') {
-          setStories((prev) => [data.payload, ...prev]);
+        } else if (data.type === 'new_story' && data.payload?.id) {
+          setStories((prev) => {
+            const filtered = prev.filter((s) => s.id !== data.payload.id);
+            return [data.payload, ...filtered];
+          });
         }
       } catch (err) {
         // ignore
@@ -187,7 +197,7 @@ export const SocialFeedView: React.FC<SocialFeedViewProps> = ({
   };
 
   const handleSharePost = (post: Post) => {
-    const shareText = `Check out this post by ${post.authorName} on Talksy: "${post.text.slice(0, 80)}"`;
+    const shareText = `Check out this post by ${post.authorName} on ZappChat: "${post.text.slice(0, 80)}"`;
     navigator.clipboard.writeText(shareText);
     setCopiedPostId(post.id);
     setTimeout(() => setCopiedPostId(null), 2000);
@@ -215,7 +225,12 @@ export const SocialFeedView: React.FC<SocialFeedViewProps> = ({
       <StoryTray
         stories={stories}
         currentUser={currentUser}
-        onStoryCreated={(newStory) => setStories((prev) => [newStory, ...prev])}
+        onStoryCreated={(newStory) =>
+          setStories((prev) => {
+            const filtered = prev.filter((s) => s.id !== newStory.id);
+            return [newStory, ...filtered];
+          })
+        }
       />
 
       <div className="max-w-3xl w-full mx-auto px-4 py-6 space-y-6">

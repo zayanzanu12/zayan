@@ -226,7 +226,7 @@ export const LinkedDevicesModal: React.FC<LinkedDevicesModalProps> = ({
                     <QrCode className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-[#E8F0FA] mb-0.5">Use Talksy across all your devices</h3>
+                    <h3 className="text-sm font-bold text-[#E8F0FA] mb-0.5">Use ZappChat across all your devices</h3>
                     <p className="text-xs text-[#94A3B8] leading-relaxed">
                       Connect your phone, desktop, or tablet with real-time end-to-end encrypted synchronization.
                     </p>
@@ -447,7 +447,7 @@ export const LinkedDevicesModal: React.FC<LinkedDevicesModalProps> = ({
 
                 <h3 className="text-sm font-bold text-[#E8F0FA] mb-1">Scan this QR Code</h3>
                 <p className="text-xs text-[#94A3B8] max-w-xs leading-relaxed">
-                  Open Talksy on your mobile device or tablet camera to instantly authorize this session.
+                  Open ZappChat on your mobile device or tablet camera to instantly authorize this session.
                 </p>
               </div>
 
